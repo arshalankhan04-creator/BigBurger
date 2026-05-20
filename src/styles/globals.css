@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties ─────────────────────────────────── */
+:root {
+  --color-espresso:      #3D1B11;
+  --color-flame-orange:  #E25222;
+  --color-warm-cream:    #FBF7F2;
+  --color-mustard:       #F3C641;
+  --color-soft-sand:     #F3EDE2;
+  --color-muted-taupe:   #756A63;
+  --color-white:         #FFFFFF;
+
+  --border-default: 1.5px solid var(--color-espresso);
+  --border-strong:  2px solid var(--color-espresso);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+/* ─── Base Reset ─────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background-color: var(--color-warm-cream);
+  color: var(--color-espresso);
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* ─── Typography Base ────────────────────────────────────────── */
+h1, h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--color-espresso);
+}
+
+h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--color-espresso);
+}
+
+p {
+  line-height: 1.6;
+  color: var(--color-muted-taupe);
+}
+
+/* ─── Utility Layer ──────────────────────────────────────────── */
+@layer utilities {
+  /* Eyebrow label above section headings */
+  .eyebrow {
+    @apply font-sans font-bold text-xs uppercase tracking-wider text-flame-orange;
+  }
+
+  /* Section wrapper */
+  .section-padding {
+    @apply py-20 px-6;
+  }
+
+  /* Max-width container */
+  .container-main {
+    @apply max-w-container mx-auto px-6;
+  }
+
+  /* Unified border token */
+  .border-brand {
+    border: var(--border-strong);
+  }
+
+  .border-brand-light {
+    border: var(--border-default);
+  }
+}
+
+/* ─── Component Layer ────────────────────────────────────────── */
+@layer components {
+  /* Primary CTA Button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-flame-orange text-white
+           font-sans font-semibold text-sm tracking-wide
+           px-6 py-3 rounded-sm
+           transition-all duration-200
+           hover:bg-flame-dark active:scale-95
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-flame-orange focus-visible:ring-offset-2;
+  }
+
+  /* Outline Button */
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2
+           bg-transparent text-espresso
+           font-sans font-semibold text-sm tracking-wide
+           px-6 py-3 rounded-sm
+           border-2 border-espresso
+           transition-all duration-200
+           hover:bg-espresso hover:text-white active:scale-95
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-espresso focus-visible:ring-offset-2;
+  }
+
+  /* Section heading block */
+  .section-header {
+    @apply flex flex-col items-center text-center gap-3 mb-12;
+  }
+
+  /* Card base */
+  .card-base {
+    @apply bg-white rounded-xl border-2 border-espresso shadow-card
+           transition-transform duration-200
+           hover:-translate-y-1;
+  }
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-warm-cream);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-muted-taupe);
+  border-radius: 999px;
+}
