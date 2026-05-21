@@ -1,13 +1,12 @@
-import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingBag } from 'lucide-react'
 import { staggerContainer, staggerItem, viewportOnce } from '@/animations/motion'
 import { featuredProducts } from '@/data/products'
 import { useCart } from '@/context/CartContext'
-import ProductModal from '@/components/common/ProductModal'
 
-function ProductCard({ product, onSelect }) {
+function ProductCard({ product }) {
+  const navigate = useNavigate()
   const { addItem, openCart } = useCart()
 
   const handleQuickAdd = (e) => {
@@ -21,12 +20,12 @@ function ProductCard({ product, onSelect }) {
       variants={staggerItem}
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.97 }}
-      onClick={() => onSelect(product)}
+      onClick={() => navigate(`/product/${product.id}`)}
       className="flex flex-col items-center text-center gap-3 group cursor-pointer"
       role="button"
       tabIndex={0}
       aria-label={`View ${product.name} details`}
-      onKeyDown={(e) => e.key === 'Enter' && onSelect(product)}
+      onKeyDown={(e) => e.key === 'Enter' && navigate(`/product/${product.id}`)}
     >
       {/* Food image */}
       <div className="w-full aspect-square flex items-center justify-center p-4 relative">
@@ -78,8 +77,6 @@ function ProductCard({ product, onSelect }) {
 }
 
 export default function FeaturedMenu() {
-  const [selectedProduct, setSelectedProduct] = useState(null)
-
   return (
     <>
       <section

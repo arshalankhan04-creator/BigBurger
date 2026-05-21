@@ -9,6 +9,7 @@ import LocationPage from '@/pages/LocationPage'
 import ContactPage from '@/pages/ContactPage'
 import CheckoutPage from '@/pages/CheckoutPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import ProductDetailPage from '@/pages/ProductDetailPage'
 import BurgerReveal from '@/components/common/BurgerReveal'
 import CartDrawer from '@/components/common/CartDrawer'
 
@@ -37,6 +38,7 @@ function AnimatedRoutes() {
         <Route path="/location" element={<PageWrapper><LocationPage /></PageWrapper>} />
         <Route path="/contact"  element={<PageWrapper><ContactPage /></PageWrapper>} />
         <Route path="/checkout" element={<PageWrapper><CheckoutPage /></PageWrapper>} />
+        <Route path="/product/:id" element={<PageWrapper><ProductDetailPage /></PageWrapper>} />
         <Route path="*"         element={<PageWrapper><NotFoundPage /></PageWrapper>} />
       </Routes>
     </AnimatePresence>

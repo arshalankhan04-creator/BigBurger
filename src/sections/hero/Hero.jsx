@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import {
   fadeUp,
   staggerContainer,
@@ -164,12 +165,12 @@ export default function Hero() {
 
             {/* CTA */}
             <motion.div variants={staggerItem}>
-              <a
-                href="#order"
+              <Link
+                to="/menu"
                 className="btn-primary text-base px-8 py-4"
               >
                 Order Now
-              </a>
+              </Link>
             </motion.div>
 
             {/* Stats strip */}
