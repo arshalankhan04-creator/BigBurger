@@ -1,10 +1,9 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, ShoppingBag } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { allProducts } from '@/data/products'
 import { staggerContainer, staggerItem, fadeUp, viewportOnce } from '@/animations/motion'
-import ProductModal from '@/components/common/ProductModal'
 import { useCart } from '@/context/CartContext'
 
 const CATEGORIES = [
@@ -16,7 +15,8 @@ const CATEGORIES = [
 ]
 
 // ── Single product card ───────────────────────────────────────────
-function MenuCard({ product, onSelect }) {
+function MenuCard({ product }) {
+  const navigate = useNavigate()
   const { addItem, openCart } = useCart()
 
   const handleQuickAdd = (e) => {
@@ -30,14 +30,14 @@ function MenuCard({ product, onSelect }) {
       variants={staggerItem}
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.97 }}
-      onClick={() => onSelect(product)}
+      onClick={() => navigate(`/product/${product.id}`)}
       className="bg-white rounded-xl border-2 border-espresso
                  overflow-hidden cursor-pointer group
                  flex flex-col shadow-card"
       role="button"
       tabIndex={0}
       aria-label={`View ${product.name} details`}
-      onKeyDown={(e) => e.key === 'Enter' && onSelect(product)}
+      onKeyDown={(e) => e.key === 'Enter' && navigate(`/product/${product.id}`)}
     >
       {/* Image */}
       <div className="relative bg-soft-sand aspect-square overflow-hidden">
@@ -94,8 +94,7 @@ export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState(
     CATEGORIES.find((c) => c.id === initialCategory) ? initialCategory : 'all'
   )
-  const [search, setSearch]                   = useState('')
-  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [search, setSearch] = useState('')
 
   const filtered = useMemo(() => {
     return allProducts.filter((p) => {
@@ -107,9 +106,8 @@ export default function MenuPage() {
   }, [activeCategory, search])
 
   return (
-    <>
-      {/* Page wrapper */}
-      <div className="min-h-screen bg-warm-cream pt-16">
+    /* Page wrapper */
+    <div className="min-h-screen bg-warm-cream pt-16">
 
         {/* ── Page header ── */}
         <div className="bg-espresso py-16 md:py-20">
@@ -229,7 +227,6 @@ export default function MenuPage() {
                   <MenuCard
                     key={product.id}
                     product={product}
-                    onSelect={setSelectedProduct}
                   />
                 ))}
               </motion.div>
@@ -259,14 +256,5 @@ export default function MenuPage() {
 
         </div>
       </div>
-
-      {/* ── Product detail modal ── */}
-      {selectedProduct && (
-        <ProductModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-        />
-      )}
-    </>
   )
 }

@@ -5,6 +5,8 @@ import { staggerContainer, staggerItem, viewportOnce } from '@/animations/motion
 import { featuredProducts } from '@/data/products'
 import { useCart } from '@/context/CartContext'
 
+// ProductModal import removed — cards now navigate to /product/:id
+
 function ProductCard({ product }) {
   const navigate = useNavigate()
   const { addItem, openCart } = useCart()
@@ -83,8 +85,7 @@ export default function FeaturedMenu() {
         id="menu"
         className="bg-warm-cream py-16 md:py-20"
         aria-label="Featured menu"
-      >
-        <div className="max-w-container mx-auto px-6">
+      >        <div className="max-w-container mx-auto px-6">
 
           {/* ── Section header ── */}
           <motion.div
@@ -129,7 +130,6 @@ export default function FeaturedMenu() {
               <ProductCard
                 key={product.id}
                 product={product}
-                onSelect={setSelectedProduct}
               />
             ))}
           </motion.div>
@@ -151,14 +151,6 @@ export default function FeaturedMenu() {
           </svg>
         </div>
       </section>
-
-      {/* ── Product detail modal ── */}
-      {selectedProduct && (
-        <ProductModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-        />
-      )}
     </>
   )
 }
