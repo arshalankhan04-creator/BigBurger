@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { staggerContainer, staggerItem, viewportOnce } from '@/animations/motion'
 
 const offers = [
@@ -8,7 +9,7 @@ const offers = [
     title: 'Get a 50% Discount On Black Friday',
     description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
     cta: 'Order Now',
-    ctaHref: '#order',
+    ctaHref: '/menu',
     image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop&auto=format',
     badge: '50% OFF',
   },
@@ -109,9 +110,9 @@ export default function Offers() {
               <p className="font-sans text-sm text-white/60 leading-relaxed">
                 {offers[0].description}
               </p>
-              <a href={offers[0].ctaHref} className="btn-primary mt-2 self-start text-sm">
+              <Link to={offers[0].ctaHref} className="btn-primary mt-2 self-start text-sm">
                 {offers[0].cta}
-              </a>
+              </Link>
             </div>
 
             {/* Food image — absolute right */}
