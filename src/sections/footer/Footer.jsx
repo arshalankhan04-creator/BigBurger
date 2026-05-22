@@ -1,19 +1,41 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { fadeUp, viewportOnce } from '@/animations/motion'
 import { ShoppingBag, Instagram, Facebook, Twitter, Youtube } from 'lucide-react'
 
+// to: internal route, href: external URL, disabled: not yet available
 const footerLinks = {
-  Company: ['About Us', 'Careers', 'Press', 'Blog'],
-  Menu:    ['Burgers', 'Sides', 'Salads', 'Drinks', 'Desserts'],
-  Support: ['Contact Us', 'FAQ', 'Locations', 'Franchising'],
-  Legal:   ['Privacy Policy', 'Terms of Service', 'Cookie Policy'],
+  Company: [
+    { label: 'About Us',  to: '/about' },
+    { label: 'Careers',   disabled: true },
+    { label: 'Press',     disabled: true },
+    { label: 'Blog',      disabled: true },
+  ],
+  Menu: [
+    { label: 'Burgers',  to: '/menu?category=burgers' },
+    { label: 'Sides',    to: '/menu?category=sides' },
+    { label: 'Salads',   to: '/menu?category=salads' },
+    { label: 'Drinks',   to: '/menu?category=drinks' },
+    { label: 'Desserts', disabled: true },
+  ],
+  Support: [
+    { label: 'Contact Us',   to: '/contact' },
+    { label: 'FAQ',          disabled: true },
+    { label: 'Locations',    to: '/location' },
+    { label: 'Franchising',  disabled: true },
+  ],
+  Legal: [
+    { label: 'Privacy Policy',    disabled: true },
+    { label: 'Terms of Service',  disabled: true },
+    { label: 'Cookie Policy',     disabled: true },
+  ],
 }
 
 const socialLinks = [
-  { icon: Instagram, label: 'Instagram', href: '#' },
-  { icon: Facebook,  label: 'Facebook',  href: '#' },
-  { icon: Twitter,   label: 'Twitter',   href: '#' },
-  { icon: Youtube,   label: 'YouTube',   href: '#' },
+  { icon: Instagram, label: 'Instagram', href: 'https://instagram.com' },
+  { icon: Facebook,  label: 'Facebook',  href: 'https://facebook.com' },
+  { icon: Twitter,   label: 'Twitter',   href: 'https://twitter.com' },
+  { icon: Youtube,   label: 'YouTube',   href: 'https://youtube.com' },
 ]
 
 export default function Footer() {
@@ -34,8 +56,8 @@ export default function Footer() {
           {/* Brand column */}
           <div className="lg:col-span-2 flex flex-col gap-5">
             {/* Logo */}
-            <a
-              href="#home"
+            <Link
+              to="/"
               className="flex items-center gap-2 w-fit"
               aria-label="Big Burger homepage"
             >
@@ -45,7 +67,7 @@ export default function Footer() {
               <span className="font-display font-black text-white text-xl leading-none">
                 Big <span className="text-flame-orange">Burger</span>
               </span>
-            </a>
+            </Link>
 
             <p className="font-sans text-sm text-white/60 leading-relaxed max-w-xs">
               Real flame. Real flavor. Real good. Serving craft burgers
@@ -58,6 +80,8 @@ export default function Footer() {
                 <a
                   key={label}
                   href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={label}
                   className="w-9 h-9 rounded-sm bg-white/10 hover:bg-flame-orange
                              flex items-center justify-center
@@ -78,15 +102,29 @@ export default function Footer() {
               </h4>
               <ul className="flex flex-col gap-2.5">
                 {links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="font-sans text-sm text-white/60 hover:text-flame-orange
-                                 transition-colors duration-150
-                                 focus-visible:outline-none focus-visible:text-flame-orange"
-                    >
-                      {link}
-                    </a>
+                  <li key={link.label}>
+                    {link.disabled ? (
+                      // Disabled — page not yet available
+                      <span
+                        className="font-sans text-sm text-white/30 cursor-not-allowed
+                                   flex items-center gap-1.5"
+                        title="Coming soon"
+                        aria-disabled="true"
+                      >
+                        {link.label}
+                        <span className="text-[10px] text-white/25 font-sans">soon</span>
+                      </span>
+                    ) : (
+                      // Active internal link
+                      <Link
+                        to={link.to}
+                        className="font-sans text-sm text-white/60 hover:text-flame-orange
+                                   transition-colors duration-150
+                                   focus-visible:outline-none focus-visible:text-flame-orange"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
