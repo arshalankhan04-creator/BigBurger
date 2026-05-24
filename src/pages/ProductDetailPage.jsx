@@ -267,10 +267,11 @@ export default function ProductDetailPage() {
 
   // Estimated prep time based on category
   const prepTime = {
-    burgers: '12–15 min',
-    sides:   '8–10 min',
-    salads:  '5–7 min',
-    drinks:  '3–5 min',
+    burgers:  '12–15 min',
+    sides:    '8–10 min',
+    salads:   '5–7 min',
+    drinks:   '3–5 min',
+    desserts: '6–8 min',
   }[product.category] ?? '10–12 min'
 
   return (

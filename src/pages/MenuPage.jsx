@@ -7,11 +7,12 @@ import { staggerContainer, staggerItem, fadeUp, viewportOnce } from '@/animation
 import { useCart } from '@/context/CartContext'
 
 const CATEGORIES = [
-  { id: 'all',     label: 'All' },
-  { id: 'burgers', label: 'Burgers' },
-  { id: 'sides',   label: 'Sides' },
-  { id: 'salads',  label: 'Salads' },
-  { id: 'drinks',  label: 'Drinks' },
+  { id: 'all',      label: 'All' },
+  { id: 'burgers',  label: 'Burgers' },
+  { id: 'sides',    label: 'Sides' },
+  { id: 'salads',   label: 'Salads' },
+  { id: 'drinks',   label: 'Drinks' },
+  { id: 'desserts', label: 'Desserts' },
 ]
 
 // ── Single product card ───────────────────────────────────────────

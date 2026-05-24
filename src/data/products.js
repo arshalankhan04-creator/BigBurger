@@ -177,6 +177,68 @@ export const allProducts = [
     badge: 'Popular',
     calories: 720,
   },
+
+  // Desserts
+  {
+    id: 15,
+    name: 'Classic Brownie',
+    ingredients: 'Dark chocolate, butter, eggs, flour, walnuts',
+    description:
+      'Dense, fudgy dark chocolate brownie loaded with crunchy walnuts. Served warm with a dusting of powdered sugar.',
+    price: 28.00,
+    image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&h=600&fit=crop&auto=format',
+    category: 'desserts',
+    badge: null,
+    calories: 420,
+  },
+  {
+    id: 16,
+    name: 'Vanilla Soft Serve',
+    ingredients: 'Vanilla ice cream, waffle cone, sprinkles',
+    description:
+      'Creamy soft-serve vanilla ice cream swirled high in a crispy waffle cone. Simple, classic, and irresistible.',
+    price: 18.00,
+    image: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=600&h=600&fit=crop&auto=format',
+    category: 'desserts',
+    badge: 'Popular',
+    calories: 280,
+  },
+  {
+    id: 17,
+    name: 'Molten Lava Cake',
+    ingredients: 'Dark chocolate, butter, eggs, sugar, vanilla ice cream',
+    description:
+      'Warm chocolate cake with a gooey molten center, served with a scoop of vanilla ice cream. Pure indulgence.',
+    price: 45.00,
+    image: 'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=600&h=600&fit=crop&auto=format',
+    category: 'desserts',
+    badge: '🔥 Hot',
+    calories: 580,
+  },
+  {
+    id: 18,
+    name: 'Churros with Dip',
+    ingredients: 'Fried dough, cinnamon sugar, chocolate dipping sauce',
+    description:
+      'Golden crispy churros rolled in cinnamon sugar, served with a rich warm chocolate dipping sauce.',
+    price: 32.00,
+    image: 'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=600&h=600&fit=crop&auto=format',
+    category: 'desserts',
+    badge: null,
+    calories: 390,
+  },
+  {
+    id: 19,
+    name: 'Strawberry Cheesecake',
+    ingredients: 'Cream cheese, graham cracker crust, fresh strawberries, whipped cream',
+    description:
+      'Velvety New York-style cheesecake on a buttery graham cracker base, topped with fresh strawberry compote.',
+    price: 52.00,
+    image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600&h=600&fit=crop&auto=format',
+    category: 'desserts',
+    badge: 'Premium',
+    calories: 490,
+  },
 ]
 
 // Featured 6 for landing page

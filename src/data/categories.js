@@ -25,4 +25,10 @@ export const categories = [
     image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=400&fit=crop&crop=center&auto=format',
     slug: 'drinks',
   },
+  {
+    id: 5,
+    label: 'Desserts',
+    image: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=400&h=400&fit=crop&crop=center&auto=format',
+    slug: 'desserts',
+  },
 ]
