@@ -7,6 +7,7 @@ import { ShoppingBag, Instagram, Facebook, Twitter, Youtube } from 'lucide-react
 const footerLinks = {
   Company: [
     { label: 'About Us',  to: '/about' },
+    { label: 'Wishlist',  to: '/wishlist' },
     { label: 'Careers',   disabled: true },
     { label: 'Press',     disabled: true },
     { label: 'Blog',      disabled: true },
@@ -20,6 +21,9 @@ const footerLinks = {
   ],
   Support: [
     { label: 'Contact Us',   to: '/contact' },
+    { label: 'Rewards',      to: '/rewards' },
+    { label: 'Deals',        to: '/deals' },
+    { label: 'Track Order',  to: '/track-order' },
     { label: 'FAQ',          disabled: true },
     { label: 'Locations',    to: '/location' },
     { label: 'Franchising',  disabled: true },

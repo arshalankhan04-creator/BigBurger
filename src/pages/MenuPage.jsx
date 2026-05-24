@@ -69,7 +69,7 @@ function MenuCard({ product }) {
         </p>
         <div className="flex items-center justify-between mt-2">
           <span className="font-sans font-black text-xl text-flame-orange">
-            ${product.price.toFixed(2)}
+            ₹{product.price.toFixed(2)}
           </span>
           <button
             onClick={handleQuickAdd}

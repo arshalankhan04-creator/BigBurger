@@ -14,17 +14,23 @@ import {
   Zap,
   Leaf,
   Clock,
+  ThumbsUp,
 } from 'lucide-react'
 import { allProducts } from '@/data/products'
+import { getReviewsForProduct, getRatingSummary } from '@/data/reviews'
 import { useCart } from '@/context/CartContext'
+import { useWishlist } from '@/context/WishlistContext'
 import { staggerContainer, staggerItem, fadeUp, scaleIn } from '@/animations/motion'
+import useRecentlyViewed from '@/hooks/useRecentlyViewed'
 
 // ── Nutrition pill ────────────────────────────────────────────────
 function NutritionPill({ icon: Icon, label, value, color }) {
   return (
     <div className="flex flex-col items-center gap-1 bg-white rounded-xl px-4 py-3 shadow-sm border border-soft-sand">
       <Icon size={18} className={color} />
-      <span className="font-display font-black text-lg text-espresso leading-none">{value}</span>
+      <span className="font-display font-black text-lg text-espresso leading-none whitespace-nowrap text-center">
+        {value}
+      </span>
       <span className="font-sans text-xs text-muted-taupe">{label}</span>
     </div>
   )
@@ -42,21 +48,191 @@ function IngredientTag({ name }) {
   )
 }
 
+// ── Reviews Section ───────────────────────────────────────────────
+function ReviewsSection({ productId }) {
+  const reviews = getReviewsForProduct(productId)
+  const summary = getRatingSummary(reviews)
+  const [filter, setFilter] = useState('all')
+  const [helpfulIds, setHelpfulIds] = useState([])
+
+  const filtered = filter === 'all' ? reviews : reviews.filter((r) => r.rating === Number(filter))
+
+  const toggleHelpful = (id) => {
+    setHelpfulIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id])
+  }
+
+  return (
+    <motion.section
+      variants={fadeUp}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: '0px 0px -60px 0px' }}
+      className="mt-16"
+    >
+      <h2 className="font-display font-black text-2xl text-espresso mb-8">
+        Customer Reviews
+      </h2>
+
+      {/* Rating summary */}
+      <div className="bg-white rounded-2xl border-2 border-espresso p-6 mb-8
+                      grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        {/* Big average */}
+        <div className="flex flex-col items-center gap-2">
+          <span className="font-display font-black text-7xl text-espresso leading-none">
+            {summary.avg}
+          </span>
+          <div className="flex items-center gap-1">
+            {[1,2,3,4,5].map((s) => (
+              <Star key={s} size={20}
+                className={s <= Math.round(Number(summary.avg))
+                  ? 'fill-mustard text-mustard'
+                  : 'text-espresso/20'} />
+            ))}
+          </div>
+          <span className="font-sans text-sm text-muted-taupe">
+            Based on {summary.total} reviews
+          </span>
+        </div>
+
+        {/* Distribution bars */}
+        <div className="flex flex-col gap-2">
+          {[5,4,3,2,1].map((star) => {
+            const count = summary.dist[star] || 0
+            const pct = summary.total > 0 ? (count / summary.total) * 100 : 0
+            return (
+              <button
+                key={star}
+                onClick={() => setFilter(filter === String(star) ? 'all' : String(star))}
+                className={`flex items-center gap-3 group w-full text-left
+                            ${filter === String(star) ? 'opacity-100' : 'opacity-80 hover:opacity-100'}`}
+              >
+                <span className="font-sans text-xs text-muted-taupe w-4 shrink-0">{star}</span>
+                <Star size={12} className="fill-mustard text-mustard shrink-0" />
+                <div className="flex-1 h-2 bg-soft-sand rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-mustard rounded-full"
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${pct}%` }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                  />
+                </div>
+                <span className="font-sans text-xs text-muted-taupe w-4 shrink-0">{count}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex items-center gap-2 flex-wrap mb-6">
+        {['all', '5', '4', '3'].map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-1.5 rounded-full font-sans font-semibold text-sm
+                        border-2 transition-all duration-150
+                        ${filter === f
+                          ? 'bg-espresso text-white border-espresso'
+                          : 'bg-white text-espresso border-espresso/30 hover:border-espresso'
+                        }`}
+          >
+            {f === 'all' ? 'All' : `${f} ★`}
+          </button>
+        ))}
+      </div>
+
+      {/* Review cards */}
+      <div className="flex flex-col gap-4">
+        <AnimatePresence mode="wait">
+          {filtered.length === 0 ? (
+            <motion.p
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="font-sans text-sm text-muted-taupe py-8 text-center"
+            >
+              No reviews for this rating yet.
+            </motion.p>
+          ) : (
+            filtered.map((review) => (
+              <motion.div
+                key={review.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white rounded-2xl border-2 border-espresso/10 p-5 flex flex-col gap-3"
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={review.avatar}
+                      alt={review.name}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-espresso/10"
+                    />
+                    <div>
+                      <p className="font-sans font-bold text-sm text-espresso">{review.name}</p>
+                      <p className="font-sans text-xs text-muted-taupe">{review.date}</p>
+                    </div>
+                  </div>
+                  {/* Stars */}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {[1,2,3,4,5].map((s) => (
+                      <Star key={s} size={13}
+                        className={s <= review.rating ? 'fill-mustard text-mustard' : 'text-espresso/20'} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Review text */}
+                <p className="font-sans text-sm text-muted-taupe leading-relaxed">
+                  "{review.text}"
+                </p>
+
+                {/* Helpful */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => toggleHelpful(review.id)}
+                    className={`flex items-center gap-1.5 font-sans text-xs font-semibold
+                                transition-colors duration-150
+                                ${helpfulIds.includes(review.id)
+                                  ? 'text-flame-orange'
+                                  : 'text-muted-taupe hover:text-espresso'
+                                }`}
+                  >
+                    <ThumbsUp size={13} className={helpfulIds.includes(review.id) ? 'fill-flame-orange' : ''} />
+                    Helpful ({review.helpful + (helpfulIds.includes(review.id) ? 1 : 0)})
+                  </button>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.section>
+  )
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addItem, openCart } = useCart()
+  const { toggle: toggleWishlist, isWishlisted } = useWishlist()
 
   const product = allProducts.find((p) => p.id === Number(id))
 
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
-  const [wishlisted, setWishlisted] = useState(false)
 
   // Related products — same category, exclude current
   const related = allProducts
     .filter((p) => p.category === product?.category && p.id !== product?.id)
     .slice(0, 4)
+
+  // Recently viewed
+  const recentIds = useRecentlyViewed(product?.id)
 
   // Reset qty when product changes
   useEffect(() => {
@@ -119,7 +295,7 @@ export default function ProductDetailPage() {
       </div>
 
       {/* ── Main content ── */}
-      <div className="max-w-container mx-auto px-6 pb-20">
+      <div className="max-w-container mx-auto px-6 pb-20 lg:pb-20 pb-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
 
           {/* ── LEFT: Image ── */}
@@ -127,7 +303,7 @@ export default function ProductDetailPage() {
             variants={scaleIn}
             initial="hidden"
             animate="visible"
-            className="sticky top-24"
+            className="lg:sticky lg:top-24"
           >
             {/* Image card */}
             <div className="relative bg-soft-sand rounded-2xl overflow-hidden aspect-square shadow-xl">
@@ -148,15 +324,15 @@ export default function ProductDetailPage() {
 
               {/* Wishlist button */}
               <button
-                onClick={() => setWishlisted((w) => !w)}
+                onClick={() => toggleWishlist(product.id)}
                 className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90
                            backdrop-blur-sm flex items-center justify-center shadow-md
                            hover:scale-110 transition-transform"
-                aria-label="Add to wishlist"
+                aria-label={isWishlisted(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
               >
                 <Heart
                   size={18}
-                  className={wishlisted ? 'fill-flame-orange text-flame-orange' : 'text-muted-taupe'}
+                  className={isWishlisted(product.id) ? 'fill-flame-orange text-flame-orange' : 'text-muted-taupe'}
                 />
               </button>
 
@@ -385,6 +561,117 @@ export default function ProductDetailPage() {
             </div>
           </motion.section>
         )}
+
+        {/* ── Recently Viewed ── */}
+        {recentIds.length > 0 && (() => {
+          const recentProducts = recentIds
+            .map((rid) => allProducts.find((p) => p.id === rid))
+            .filter(Boolean)
+          if (!recentProducts.length) return null
+          return (
+            <motion.section
+              variants={fadeUp}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '0px 0px -60px 0px' }}
+              className="mt-16"
+            >
+              <h2 className="font-display font-black text-2xl text-espresso mb-6">
+                Recently Viewed
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {recentProducts.map((item) => (
+                  <Link
+                    key={item.id}
+                    to={`/product/${item.id}`}
+                    className="group bg-white rounded-2xl overflow-hidden shadow-sm
+                               hover:shadow-md transition-all duration-200 hover:-translate-y-1
+                               border border-espresso/10"
+                  >
+                    <div className="aspect-square overflow-hidden bg-soft-sand">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-3">
+                      <p className="font-sans font-semibold text-sm text-espresso line-clamp-1">
+                        {item.name}
+                      </p>
+                      <p className="font-display font-black text-flame-orange text-base mt-0.5">
+                        ₹{item.price.toFixed(0)}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </motion.section>
+          )
+        })()}
+      </div>
+
+      {/* ── Reviews ── */}
+      <div className="max-w-container mx-auto px-6 pb-8">
+        <ReviewsSection productId={product.id} />
+      </div>
+
+      {/* ── Mobile Sticky Add to Cart Bar (hidden on lg+) ── */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[980]
+                      bg-white border-t-2 border-espresso/10
+                      px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div className="flex items-center gap-3 max-w-lg mx-auto">
+          {/* Qty stepper */}
+          <div className="flex items-center bg-soft-sand rounded-xl overflow-hidden border border-soft-sand shrink-0">
+            <button
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              className="w-9 h-9 flex items-center justify-center
+                         hover:bg-espresso/10 transition-colors text-espresso"
+              aria-label="Decrease quantity"
+            >
+              <Minus size={14} />
+            </button>
+            <span className="w-8 text-center font-display font-black text-base text-espresso">
+              {qty}
+            </span>
+            <button
+              onClick={() => setQty((q) => q + 1)}
+              className="w-9 h-9 flex items-center justify-center
+                         hover:bg-espresso/10 transition-colors text-espresso"
+              aria-label="Increase quantity"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {/* Add to Cart button */}
+          <AnimatePresence mode="wait">
+            <motion.button
+              key={added ? 'added-mob' : 'add-mob'}
+              initial={{ scale: 0.97, opacity: 0.8 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.97, opacity: 0.8 }}
+              transition={{ duration: 0.15 }}
+              onClick={handleAddToCart}
+              disabled={added}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl
+                          font-sans font-bold text-sm transition-all duration-200
+                          ${added
+                            ? 'bg-green-500 text-white cursor-default'
+                            : 'bg-flame-orange hover:bg-flame-dark text-white shadow-md'
+                          }`}
+            >
+              {added ? (
+                <>✓ Added!</>
+              ) : (
+                <>
+                  <ShoppingCart size={17} />
+                  Add to Cart · ₹{(product.price * qty).toFixed(0)}
+                </>
+              )}
+            </motion.button>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   )

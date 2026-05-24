@@ -7,7 +7,7 @@ const offers = [
     id: 1,
     eyebrow: 'Limited Time',
     title: 'Get a 50% Discount On Black Friday',
-    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+    description: 'Stack up on your favorites. Every burger, every side — half price for one day only.',
     cta: 'Order Now',
     ctaHref: '/menu',
     image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop&auto=format',
@@ -18,7 +18,7 @@ const offers = [
     eyebrow: 'Free with Every Order',
     title: 'Free Drinks',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec.',
+      'Download the Big Burger app and get a free drink with every order. Available on iOS and Android.',
     ctaApp: true,
     image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=400&fit=crop&auto=format',
   },

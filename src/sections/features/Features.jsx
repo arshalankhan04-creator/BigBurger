@@ -6,23 +6,23 @@ const features = [
   {
     id: 1,
     icon: Leaf,
-    title: 'Fresh Ingredient',
+    title: 'Fresh Ingredients',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis.',
+      'We source locally and seasonally. Every vegetable, every bun, every patty — picked fresh daily from trusted suppliers.',
   },
   {
     id: 2,
     icon: Heart,
-    title: 'Fresh Ingredient',
+    title: 'Made With Love',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis.',
+      'Each burger is hand-crafted by our kitchen team. No assembly lines, no shortcuts — just real people making real food.',
   },
   {
     id: 3,
     icon: Zap,
-    title: 'Fresh Ingredient',
+    title: 'Fast & Reliable',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis.',
+      'Hot food, fast delivery. We guarantee your order is ready in under 15 minutes — or your next one is on us.',
   },
 ]
 

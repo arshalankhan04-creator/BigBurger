@@ -32,7 +32,7 @@ function CartItem({ item }) {
           {item.name}
         </p>
         <p className="font-sans font-black text-base text-flame-orange mt-0.5">
-          ${(item.price * item.qty).toFixed(2)}
+          ₹{(item.price * item.qty).toFixed(2)}
         </p>
 
         {/* Qty stepper */}
@@ -40,7 +40,7 @@ function CartItem({ item }) {
           <button
             onClick={() => updateQty(item.id, item.qty - 1)}
             className="w-7 h-7 rounded-sm border-2 border-espresso
-                       flex items-center justify-center
+                       flex items-center justify-center text-espresso
                        hover:bg-espresso hover:text-white
                        transition-colors duration-150
                        focus-visible:outline-none"
@@ -54,7 +54,7 @@ function CartItem({ item }) {
           <button
             onClick={() => updateQty(item.id, item.qty + 1)}
             className="w-7 h-7 rounded-sm border-2 border-espresso
-                       flex items-center justify-center
+                       flex items-center justify-center text-espresso
                        hover:bg-espresso hover:text-white
                        transition-colors duration-150
                        focus-visible:outline-none"
@@ -219,19 +219,19 @@ export default function CartDrawer() {
                     <div className="flex justify-between">
                       <span className="font-sans text-sm text-muted-taupe">Subtotal</span>
                       <span className="font-sans font-semibold text-sm text-espresso">
-                        ${subtotal.toFixed(2)}
+                        ₹{subtotal.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-sans text-sm text-muted-taupe">Delivery</span>
                       <span className="font-sans font-semibold text-sm text-espresso">
-                        ${deliveryFee.toFixed(2)}
+                        ₹{deliveryFee.toFixed(2)}
                       </span>
                     </div>
                     <div className="border-t border-espresso/10 pt-2 flex justify-between">
                       <span className="font-sans font-bold text-base text-espresso">Total</span>
                       <span className="font-sans font-black text-xl text-flame-orange">
-                        ${total.toFixed(2)}
+                        ₹{total.toFixed(2)}
                       </span>
                     </div>
                   </div>

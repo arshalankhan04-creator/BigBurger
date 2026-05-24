@@ -159,8 +159,8 @@ export default function Hero() {
               className="font-sans text-base lg:text-lg text-muted-taupe
                          max-w-xs sm:max-w-sm leading-relaxed"
             >
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut
-              elit tellus, luctus nec ullamcorper mattis.
+              Flame-grilled since 1980. Every patty cooked over real fire,
+              every ingredient sourced fresh. This is what a burger should taste like.
             </motion.p>
 
             {/* CTA */}

@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CartProvider } from '@/context/CartContext'
+import { ThemeProvider } from '@/context/ThemeContext'
+import { WishlistProvider } from '@/context/WishlistContext'
 import MainLayout from '@/layouts/MainLayout'
 import Home from '@/pages/Home'
 import MenuPage from '@/pages/MenuPage'
@@ -10,6 +12,10 @@ import ContactPage from '@/pages/ContactPage'
 import CheckoutPage from '@/pages/CheckoutPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import ProductDetailPage from '@/pages/ProductDetailPage'
+import RewardsPage from '@/pages/RewardsPage'
+import DealsPage from '@/pages/DealsPage'
+import OrderTrackingPage from '@/pages/OrderTrackingPage'
+import WishlistPage from '@/pages/WishlistPage'
 import BurgerReveal from '@/components/common/BurgerReveal'
 import CartDrawer from '@/components/common/CartDrawer'
 
@@ -39,7 +45,11 @@ function AnimatedRoutes() {
         <Route path="/contact"  element={<PageWrapper><ContactPage /></PageWrapper>} />
         <Route path="/checkout" element={<PageWrapper><CheckoutPage /></PageWrapper>} />
         <Route path="/product/:id" element={<PageWrapper><ProductDetailPage /></PageWrapper>} />
-        <Route path="*"         element={<PageWrapper><NotFoundPage /></PageWrapper>} />
+        <Route path="/rewards"     element={<PageWrapper><RewardsPage /></PageWrapper>} />
+        <Route path="/deals"       element={<PageWrapper><DealsPage /></PageWrapper>} />
+        <Route path="/track-order" element={<PageWrapper><OrderTrackingPage /></PageWrapper>} />
+        <Route path="/wishlist"    element={<PageWrapper><WishlistPage /></PageWrapper>} />
+        <Route path="*"            element={<PageWrapper><NotFoundPage /></PageWrapper>} />
       </Routes>
     </AnimatePresence>
   )
@@ -48,13 +58,17 @@ function AnimatedRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <CartProvider>
-        <BurgerReveal />
-        <CartDrawer />
-        <MainLayout>
-          <AnimatedRoutes />
-        </MainLayout>
-      </CartProvider>
+      <ThemeProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <BurgerReveal />
+            <CartDrawer />
+            <MainLayout>
+              <AnimatedRoutes />
+            </MainLayout>
+          </WishlistProvider>
+        </CartProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

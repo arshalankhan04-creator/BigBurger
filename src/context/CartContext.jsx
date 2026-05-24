@@ -1,11 +1,21 @@
-import { createContext, useContext, useReducer, useCallback } from 'react'
+import { createContext, useContext, useReducer, useCallback, useEffect } from 'react'
 
 // ─── State shape ──────────────────────────────────────────────────
 // cart: [{ id, name, price, image, qty }]
 // isOpen: boolean
 
+// Load persisted cart items from localStorage (drawer state is never persisted)
+function loadCartFromStorage() {
+  try {
+    const saved = localStorage.getItem('bigburger_cart')
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+}
+
 const initialState = {
-  items: [],
+  items: loadCartFromStorage(),
   isOpen: false,
 }
 
@@ -74,6 +84,15 @@ const CartContext = createContext(null)
 
 export function CartProvider({ children }) {
   const [state, dispatch] = useReducer(cartReducer, initialState)
+
+  // Persist cart items to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem('bigburger_cart', JSON.stringify(state.items))
+    } catch {
+      // localStorage unavailable (private browsing, storage full) — fail silently
+    }
+  }, [state.items])
 
   const addItem    = useCallback((product, qty = 1) =>
     dispatch({ type: 'ADD_ITEM', payload: { ...product, qty } }), [])

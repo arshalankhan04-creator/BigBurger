@@ -16,9 +16,17 @@ import heroBurgerLeft from '@/assets/images/hero-burger-left.png'
  */
 
 export default function BurgerReveal({ onComplete }) {
-  const [phase, setPhase] = useState(0)
+  // Skip animation if already played in this browser session
+  const alreadyPlayed = sessionStorage.getItem('burger_revealed') === 'true'
+  const [phase, setPhase] = useState(alreadyPlayed ? 2 : 0)
 
   useEffect(() => {
+    // If already played, unlock scroll immediately and skip
+    if (alreadyPlayed) {
+      document.body.style.overflow = ''
+      return
+    }
+
     // Lock scroll during animation
     document.body.style.overflow = 'hidden'
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -28,7 +36,7 @@ export default function BurgerReveal({ onComplete }) {
     // Phase 1 → 2: unmount overlay after circle fully expands
     const t2 = setTimeout(() => {
       setPhase(2)
-      // Unlock scroll and ensure user lands at top of page (hero section)
+      sessionStorage.setItem('burger_revealed', 'true')
       document.body.style.overflow = ''
       window.scrollTo({ top: 0, behavior: 'instant' })
       onComplete?.()

@@ -1,12 +1,22 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
-import { ShoppingBag, ChevronRight, CheckCircle, Truck, Store, CreditCard, Banknote } from 'lucide-react'
+import { ShoppingBag, ChevronRight, CheckCircle, Truck, Store, CreditCard, Banknote, ArrowRight, Tag, X } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { staggerContainer, staggerItem, fadeUp } from '@/animations/motion'
 
 // ─── Constants ───────────────────────────────────────────────────
 const DELIVERY_FEE = 5.00
+
+// ─── Valid promo codes (synced with DealsPage) ───────────────────
+const PROMO_CODES = {
+  BIGBITE20:    { type: 'percent',  value: 20,   label: '20% off your order' },
+  BURGERFEST:   { type: 'bogo',     value: 0,    label: 'Buy 2 Get 1 Free (cheapest free)' },
+  FREEDELIVERY: { type: 'delivery', value: 0,    label: 'Free delivery' },
+  SIDEKICK:     { type: 'freeitem', value: 0,    label: 'Free side with any burger' },
+  LUNCHTIME:    { type: 'percent',  value: 15,   label: '15% off your order' },
+  ROYALE500:    { type: 'flat',     value: 500,  label: '₹500 off on orders above ₹2000', minOrder: 2000 },
+}
 
 const STEPS = ['Delivery', 'Payment', 'Review']
 
@@ -55,9 +65,18 @@ function Field({ label, error, children }) {
 }
 
 // ─── Order summary sidebar ────────────────────────────────────────
-function OrderSummary({ items, subtotal, orderType }) {
+function OrderSummary({ items, subtotal, orderType, promo }) {
   const delivery = orderType === 'delivery' ? DELIVERY_FEE : 0
-  const total = subtotal + delivery
+
+  // Calculate discount
+  let discount = 0
+  if (promo) {
+    if (promo.type === 'percent') discount = Math.round(subtotal * promo.value / 100)
+    else if (promo.type === 'flat' && subtotal >= (promo.minOrder || 0)) discount = promo.value
+  }
+  const discountedDelivery = promo?.type === 'delivery' ? 0 : delivery
+  const total = subtotal - discount + discountedDelivery
+
   return (
     <div className="bg-white rounded-xl border-2 border-espresso p-6 flex flex-col gap-4 sticky top-24">
       <h3 className="font-display font-black text-display-md text-espresso">Order Summary</h3>
@@ -72,7 +91,7 @@ function OrderSummary({ items, subtotal, orderType }) {
               <p className="font-sans text-xs text-muted-taupe">x{item.qty}</p>
             </div>
             <span className="font-sans font-bold text-sm text-espresso shrink-0">
-              ${(item.price * item.qty).toFixed(2)}
+              ₹{(item.price * item.qty).toFixed(2)}
             </span>
           </div>
         ))}
@@ -80,17 +99,27 @@ function OrderSummary({ items, subtotal, orderType }) {
       <div className="border-t-2 border-espresso/10 pt-3 flex flex-col gap-2">
         <div className="flex justify-between">
           <span className="font-sans text-sm text-muted-taupe">Subtotal</span>
-          <span className="font-sans font-semibold text-sm text-espresso">${subtotal.toFixed(2)}</span>
+          <span className="font-sans font-semibold text-sm text-espresso">₹{subtotal.toFixed(2)}</span>
         </div>
+        {promo && (discount > 0 || promo.type === 'delivery') && (
+          <div className="flex justify-between">
+            <span className="font-sans text-sm text-green-600 font-semibold">
+              {promo.type === 'delivery' ? 'Free Delivery' : `Discount`}
+            </span>
+            <span className="font-sans font-semibold text-sm text-green-600">
+              {promo.type === 'delivery' ? `-₹${delivery.toFixed(2)}` : `-₹${discount.toFixed(2)}`}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="font-sans text-sm text-muted-taupe">Delivery</span>
           <span className="font-sans font-semibold text-sm text-espresso">
-            {delivery === 0 ? 'Free' : `$${delivery.toFixed(2)}`}
+            {discountedDelivery === 0 ? 'Free' : `₹${discountedDelivery.toFixed(2)}`}
           </span>
         </div>
         <div className="border-t border-espresso/10 pt-2 flex justify-between">
           <span className="font-sans font-bold text-base text-espresso">Total</span>
-          <span className="font-sans font-black text-xl text-flame-orange">${total.toFixed(2)}</span>
+          <span className="font-sans font-black text-xl text-flame-orange">₹{total.toFixed(2)}</span>
         </div>
       </div>
     </div>
@@ -98,7 +127,24 @@ function OrderSummary({ items, subtotal, orderType }) {
 }
 
 // ─── Step 1: Delivery info ────────────────────────────────────────
-function DeliveryStep({ data, setData, errors, onNext }) {
+function DeliveryStep({ data, setData, errors, onNext, promo, setPromo }) {
+  const [promoInput, setPromoInput] = useState('')
+  const [promoError, setPromoError] = useState('')
+
+  const handleApplyPromo = () => {
+    const code = promoInput.trim().toUpperCase()
+    if (!code) { setPromoError('Enter a promo code'); return }
+    const found = PROMO_CODES[code]
+    if (!found) { setPromoError('Invalid promo code'); setPromo(null); return }
+    setPromo({ ...found, code })
+    setPromoError('')
+  }
+
+  const handleRemovePromo = () => {
+    setPromo(null)
+    setPromoInput('')
+    setPromoError('')
+  }
   return (
     <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="flex flex-col gap-6">
       <motion.div variants={staggerItem}>
@@ -178,6 +224,46 @@ function DeliveryStep({ data, setData, errors, onNext }) {
             onChange={(e) => setData((d) => ({ ...d, notes: e.target.value }))}
             className={`${inputClass} resize-none`} />
         </Field>
+      </motion.div>
+
+      {/* ── Promo Code ── */}
+      <motion.div variants={staggerItem} className="flex flex-col gap-2">
+        <label className="font-sans font-semibold text-sm text-espresso flex items-center gap-1.5">
+          <Tag size={14} className="text-flame-orange" />
+          Promo Code
+        </label>
+        {promo ? (
+          <div className="flex items-center gap-3 bg-green-50 border-2 border-green-500 rounded-sm px-4 py-3">
+            <CheckCircle size={16} className="text-green-600 shrink-0" />
+            <div className="flex-1">
+              <p className="font-sans font-bold text-sm text-green-700">{promo.code}</p>
+              <p className="font-sans text-xs text-green-600">{promo.label}</p>
+            </div>
+            <button onClick={handleRemovePromo} className="text-green-600 hover:text-red-500 transition-colors">
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={promoInput}
+              onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError('') }}
+              placeholder="Enter promo code"
+              className={`${inputClass} flex-1 ${promoError ? 'border-red-400' : ''}`}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
+            />
+            <button onClick={handleApplyPromo} className="btn-primary px-5 shrink-0 text-sm">
+              Apply
+            </button>
+          </div>
+        )}
+        {promoError && <p className="font-sans text-xs text-red-500">{promoError}</p>}
+        {!promo && (
+          <p className="font-sans text-xs text-muted-taupe">
+            Have a deal code? Check our <a href="/deals" className="text-flame-orange hover:underline">Deals page</a>
+          </p>
+        )}
       </motion.div>
 
       <motion.button variants={staggerItem} onClick={onNext}
@@ -295,7 +381,7 @@ function ReviewStep({ delivery, payment, items, subtotal, onBack, onConfirm, loa
       <motion.div variants={staggerItem} className="bg-mustard rounded-sm border-2 border-espresso p-5 flex justify-between items-center">
         <span className="font-sans font-bold text-base text-espresso">Total to Pay</span>
         <span className="font-display font-black text-display-md text-espresso">
-          ${(subtotal + deliveryFee).toFixed(2)}
+          ₹{(subtotal + deliveryFee).toFixed(2)}
         </span>
       </motion.div>
 
@@ -338,7 +424,10 @@ function SuccessScreen({ name }) {
         <p className="font-display font-black text-display-md text-espresso">25–35 min</p>
       </div>
       <div className="flex gap-3 flex-wrap justify-center">
-        <Link to="/" className="btn-primary">Back to Home</Link>
+        <Link to="/track-order" className="btn-primary gap-2">
+          Track Order <ArrowRight size={16} />
+        </Link>
+        <Link to="/" className="btn-outline">Back to Home</Link>
         <Link to="/menu" className="btn-outline">Order More</Link>
       </div>
     </motion.div>
@@ -359,6 +448,7 @@ export default function CheckoutPage() {
   })
   const [payment, setPayment] = useState({ paymentMethod: 'cash' })
   const [errors, setErrors]   = useState({})
+  const [promo, setPromo]     = useState(null)
 
   // Redirect to menu if cart is empty
   if (items.length === 0 && !success) {
@@ -434,7 +524,7 @@ export default function CheckoutPage() {
                 <AnimatePresence mode="wait">
                   {step === 0 && (
                     <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
-                      <DeliveryStep data={delivery} setData={setDelivery} errors={errors} onNext={handleDeliveryNext} />
+                      <DeliveryStep data={delivery} setData={setDelivery} errors={errors} onNext={handleDeliveryNext} promo={promo} setPromo={setPromo} />
                     </motion.div>
                   )}
                   {step === 1 && (
@@ -449,7 +539,7 @@ export default function CheckoutPage() {
                   )}
                 </AnimatePresence>
               </div>
-              <OrderSummary items={items} subtotal={subtotal} orderType={delivery.orderType} />
+              <OrderSummary items={items} subtotal={subtotal} orderType={delivery.orderType} promo={promo} />
             </div>
           </>
         )}

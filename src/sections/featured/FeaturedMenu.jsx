@@ -60,7 +60,7 @@ function ProductCard({ product }) {
       {/* Price + quick add */}
       <div className="flex items-center gap-3">
         <span className="font-sans font-black text-xl text-flame-orange">
-          ${product.price.toFixed(2)}
+          ₹{product.price.toFixed(2)}
         </span>
         <button
           onClick={handleQuickAdd}

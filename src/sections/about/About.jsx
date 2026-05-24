@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { staggerContainer, staggerItem, fadeUp, viewportOnce } from '@/animations/motion'
 import { Play } from 'lucide-react'
 
@@ -36,25 +37,24 @@ export default function About() {
               variants={staggerItem}
               className="font-sans text-base text-muted-taupe leading-relaxed"
             >
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              Senectus eget hendrerit fermentum. Lorem ipsum dolor sit amet,
-              consectetur adipiscing elit. Ut elit tellus, luctus nec
-              ullamcorper mattis, pulvinar dapibus leo.
+              Big Burger started as a single flame grill in a small downtown
+              kitchen. Our founder believed great food needs no gimmicks —
+              just quality ingredients, real fire, and genuine care.
             </motion.p>
 
             <motion.p
               variants={staggerItem}
               className="font-sans text-base text-muted-taupe leading-relaxed"
             >
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-              Ut elit tellus, luctus nec ullamcorper mattis, pulvinar
-              dapibus leo. Sed do eiusmod tempor incididunt ut labore.
+              Over 45 years later, that belief hasn't changed. Every patty
+              is still flame-grilled. Every ingredient is still sourced fresh.
+              Every customer still matters.
             </motion.p>
 
             <motion.div variants={staggerItem}>
-              <a href="#about" className="btn-outline self-start">
+              <Link to="/about" className="btn-outline self-start">
                 About Us
-              </a>
+              </Link>
             </motion.div>
           </motion.div>
 
