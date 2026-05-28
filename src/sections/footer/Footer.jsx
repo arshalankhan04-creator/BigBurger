@@ -21,6 +21,7 @@ const footerLinks = {
   ],
   Support: [
     { label: 'Contact Us',   to: '/contact' },
+    { label: 'My Orders',    to: '/orders' },
     { label: 'Rewards',      to: '/rewards' },
     { label: 'Deals',        to: '/deals' },
     { label: 'Track Order',  to: '/track-order' },

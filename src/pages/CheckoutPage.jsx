@@ -275,19 +275,31 @@ function DeliveryStep({ data, setData, errors, onNext, promo, setPromo }) {
 }
 
 // ─── Step 2: Payment ─────────────────────────────────────────────
-function PaymentStep({ data, setData, onNext, onBack }) {
+function PaymentStep({ data, setData, onNext, onBack, orderType }) {
+  // Payment options depend on order type
+  const paymentOptions = orderType === 'pickup'
+    ? [
+        { id: 'card',    label: 'Credit / Debit Card', icon: CreditCard },
+        { id: 'counter', label: 'Pay at Counter',       icon: Banknote   },
+      ]
+    : [
+        { id: 'card', label: 'Credit / Debit Card', icon: CreditCard },
+        { id: 'cash', label: 'Cash on Delivery',    icon: Banknote   },
+      ]
+
   return (
     <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="flex flex-col gap-6">
       <motion.div variants={staggerItem}>
         <h2 className="font-display font-black text-display-lg text-espresso">Payment Method</h2>
-        <p className="font-sans text-sm text-muted-taupe mt-1">Choose how you'd like to pay.</p>
+        <p className="font-sans text-sm text-muted-taupe mt-1">
+          {orderType === 'pickup'
+            ? 'Choose how you\'d like to pay when you pick up.'
+            : 'Choose how you\'d like to pay.'}
+        </p>
       </motion.div>
 
       <motion.div variants={staggerItem} className="flex flex-col gap-3">
-        {[
-          { id: 'card',  label: 'Credit / Debit Card', icon: CreditCard },
-          { id: 'cash',  label: 'Cash on Delivery',    icon: Banknote   },
-        ].map(({ id, label, icon: Icon }) => (
+        {paymentOptions.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setData((d) => ({ ...d, paymentMethod: id }))}
             className={`flex items-center gap-4 p-4 rounded-sm border-2 text-left
               transition-all duration-150
@@ -373,7 +385,11 @@ function ReviewStep({ delivery, payment, items, subtotal, onBack, onConfirm, loa
       <motion.div variants={staggerItem} className="bg-white rounded-sm border-2 border-espresso p-5">
         <p className="eyebrow mb-2">Payment</p>
         <p className="font-sans text-sm text-espresso font-semibold capitalize">
-          {payment.paymentMethod === 'card' ? 'Credit / Debit Card' : 'Cash on Delivery'}
+          {payment.paymentMethod === 'card'
+            ? 'Credit / Debit Card'
+            : delivery.orderType === 'pickup'
+            ? 'Pay at Counter'
+            : 'Cash on Delivery'}
         </p>
       </motion.div>
 
@@ -402,7 +418,8 @@ function ReviewStep({ delivery, payment, items, subtotal, onBack, onConfirm, loa
 }
 
 // ─── Success screen ───────────────────────────────────────────────
-function SuccessScreen({ name }) {
+function SuccessScreen({ name, orderId, orderType }) {
+  const isPickup = orderType === 'pickup'
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
       className="flex flex-col items-center text-center gap-6 py-16">
@@ -419,12 +436,22 @@ function SuccessScreen({ name }) {
           Thanks {name}! Your order is confirmed. We'll start preparing it right away. 🔥
         </p>
       </div>
+
+      {/* Order ID */}
+      <div className="bg-espresso rounded-xl px-6 py-4 flex flex-col items-center gap-1">
+        <p className="font-sans text-xs text-white/50 uppercase tracking-wider">Your Order ID</p>
+        <p className="font-display font-black text-white text-2xl tracking-widest">{orderId}</p>
+        <p className="font-sans text-xs text-white/40 mt-1">Save this to track your order</p>
+      </div>
+
       <div className="bg-soft-sand rounded-sm border-2 border-espresso/20 px-6 py-4">
         <p className="font-sans text-sm text-muted-taupe">Estimated time</p>
-        <p className="font-display font-black text-display-md text-espresso">25–35 min</p>
+        <p className="font-display font-black text-display-md text-espresso">
+          {isPickup ? '15–20 min' : '25–35 min'}
+        </p>
       </div>
       <div className="flex gap-3 flex-wrap justify-center">
-        <Link to="/track-order" className="btn-primary gap-2">
+        <Link to={`/track-order?id=${orderId}&type=${orderType}`} className="btn-primary gap-2">
           Track Order <ArrowRight size={16} />
         </Link>
         <Link to="/" className="btn-outline">Back to Home</Link>
@@ -440,7 +467,8 @@ export default function CheckoutPage() {
   const navigate = useNavigate()
   const [step, setStep]       = useState(0)
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const [success, setSuccess]   = useState(false)
+  const [orderId, setOrderId]   = useState('')
 
   const [delivery, setDelivery] = useState({
     orderType: 'delivery', firstName: '', lastName: '',
@@ -487,10 +515,28 @@ export default function CheckoutPage() {
 
   const handleConfirm = () => {
     setLoading(true)
+    const newOrderId = 'BB' + Math.random().toString(36).substring(2, 8).toUpperCase()
     setTimeout(() => {
       setLoading(false)
+      setOrderId(newOrderId)
       setSuccess(true)
       clearCart()
+
+      // Save order to localStorage history
+      try {
+        const existing = JSON.parse(localStorage.getItem('bigburger_orders') || '[]')
+        const newOrder = {
+          id: newOrderId,
+          date: new Date().toISOString(),
+          orderType: delivery.orderType,
+          items: items.map((i) => ({ id: i.id, name: i.name, price: i.price, qty: i.qty, image: i.image })),
+          subtotal,
+          total: subtotal + (delivery.orderType === 'delivery' ? 5 : 0),
+          status: 'placed',
+          customerName: `${delivery.firstName} ${delivery.lastName}`,
+        }
+        localStorage.setItem('bigburger_orders', JSON.stringify([newOrder, ...existing].slice(0, 20)))
+      } catch {}
     }, 1800)
   }
 
@@ -515,7 +561,7 @@ export default function CheckoutPage() {
 
       <div className="max-w-container mx-auto px-6 py-10">
         {success ? (
-          <SuccessScreen name={delivery.firstName} />
+          <SuccessScreen name={delivery.firstName} orderId={orderId} orderType={delivery.orderType} />
         ) : (
           <>
             <StepIndicator current={step} />
@@ -529,7 +575,7 @@ export default function CheckoutPage() {
                   )}
                   {step === 1 && (
                     <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
-                      <PaymentStep data={payment} setData={setPayment} onNext={() => setStep(2)} onBack={() => setStep(0)} />
+                      <PaymentStep data={payment} setData={setPayment} onNext={() => setStep(2)} onBack={() => setStep(0)} orderType={delivery.orderType} />
                     </motion.div>
                   )}
                   {step === 2 && (

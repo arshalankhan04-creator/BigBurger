@@ -17,6 +17,7 @@ import DealsPage from '@/pages/DealsPage'
 import OrderTrackingPage from '@/pages/OrderTrackingPage'
 import WishlistPage from '@/pages/WishlistPage'
 import FaqPage from '@/pages/FaqPage'
+import OrdersPage from '@/pages/OrdersPage'
 import BurgerReveal from '@/components/common/BurgerReveal'
 import CartDrawer from '@/components/common/CartDrawer'
 
@@ -51,6 +52,7 @@ function AnimatedRoutes() {
         <Route path="/track-order" element={<PageWrapper><OrderTrackingPage /></PageWrapper>} />
         <Route path="/wishlist"    element={<PageWrapper><WishlistPage /></PageWrapper>} />
         <Route path="/faq"         element={<PageWrapper><FaqPage /></PageWrapper>} />
+        <Route path="/orders"      element={<PageWrapper><OrdersPage /></PageWrapper>} />
         <Route path="*"            element={<PageWrapper><NotFoundPage /></PageWrapper>} />
       </Routes>
     </AnimatePresence>

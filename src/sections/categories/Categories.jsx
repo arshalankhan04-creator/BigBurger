@@ -96,7 +96,7 @@ export default function Categories() {
           initial="hidden"
           whileInView="visible"
           viewport={viewportOnce}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6"
         >
           {categories.map((item) => (
             <CategoryCard key={item.id} item={item} />

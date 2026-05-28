@@ -4,42 +4,42 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { staggerContainer, staggerItem } from '@/animations/motion'
 import {
   CheckCircle, Clock, ChefHat, Bike, Package,
-  Search, ArrowRight, MapPin, Phone,
+  Search, ArrowRight, MapPin, Phone, Store,
 } from 'lucide-react'
 
-// ─── Stages ───────────────────────────────────────────────────────
-const STAGES = [
+// ─── Stages — Delivery ────────────────────────────────────────────
+const DELIVERY_STAGES = [
   {
-    id: 0,
-    key: 'placed',
-    label: 'Order Placed',
-    sublabel: 'We received your order',
-    icon: Package,
-    duration: 8000,   // ms before auto-advancing
+    id: 0, key: 'placed',    label: 'Order Placed',
+    sublabel: 'We received your order',       icon: Package,      duration: 8000,
   },
   {
-    id: 1,
-    key: 'preparing',
-    label: 'Preparing',
-    sublabel: 'Our chefs are on it',
-    icon: ChefHat,
-    duration: 12000,
+    id: 1, key: 'preparing', label: 'Preparing',
+    sublabel: 'Our chefs are on it',          icon: ChefHat,      duration: 12000,
   },
   {
-    id: 2,
-    key: 'on_the_way',
-    label: 'Out for Delivery',
-    sublabel: 'Your order is on the way',
-    icon: Bike,
-    duration: 10000,
+    id: 2, key: 'on_the_way', label: 'Out for Delivery',
+    sublabel: 'Your order is on the way',     icon: Bike,         duration: 10000,
   },
   {
-    id: 3,
-    key: 'delivered',
-    label: 'Delivered',
-    sublabel: 'Enjoy your meal!',
-    icon: CheckCircle,
-    duration: null,   // final stage — no auto-advance
+    id: 3, key: 'delivered', label: 'Delivered',
+    sublabel: 'Enjoy your meal!',             icon: CheckCircle,  duration: null,
+  },
+]
+
+// ─── Stages — Pickup ──────────────────────────────────────────────
+const PICKUP_STAGES = [
+  {
+    id: 0, key: 'placed',    label: 'Order Placed',
+    sublabel: 'We received your order',       icon: Package,      duration: 8000,
+  },
+  {
+    id: 1, key: 'preparing', label: 'Preparing',
+    sublabel: 'Our chefs are on it',          icon: ChefHat,      duration: 12000,
+  },
+  {
+    id: 2, key: 'ready',     label: 'Ready for Pickup',
+    sublabel: 'Come collect your order!',     icon: Store,        duration: null,
   },
 ]
 
@@ -98,9 +98,11 @@ function StageStep({ stage, status }) {
 }
 
 // ─── Tracking view ────────────────────────────────────────────────
-function TrackingView({ orderId, onReset }) {
+function TrackingView({ orderId, orderType, onReset }) {
+  const STAGES = orderType === 'pickup' ? PICKUP_STAGES : DELIVERY_STAGES
   const [currentStage, setCurrentStage] = useState(0)
   const timerRef = useRef(null)
+  const isPickup = orderType === 'pickup'
 
   useEffect(() => {
     const stage = STAGES[currentStage]
@@ -146,7 +148,7 @@ function TrackingView({ orderId, onReset }) {
                               ? 'bg-green-500/20 text-green-400'
                               : 'bg-flame-orange/20 text-flame-orange'
                             }`}>
-            {isDelivered ? '✓ Delivered' : '● Live'}
+            {isDelivered ? (isPickup ? '✓ Ready' : '✓ Delivered') : '● Live'}
           </span>
         </div>
 
@@ -155,7 +157,7 @@ function TrackingView({ orderId, onReset }) {
           <div className="flex items-center gap-2 bg-white/5 rounded-lg px-4 py-3">
             <Clock size={16} className="text-mustard shrink-0" />
             <span className="font-sans text-sm text-white/80">
-              Estimated delivery in{' '}
+              {isPickup ? 'Ready for pickup in' : 'Estimated delivery in'}{' '}
               <span className="font-bold text-white">{minutesLeft} min</span>
             </span>
           </div>
@@ -165,7 +167,10 @@ function TrackingView({ orderId, onReset }) {
           <div className="flex items-center gap-2 bg-green-500/10 rounded-lg px-4 py-3">
             <CheckCircle size={16} className="text-green-400 shrink-0" />
             <span className="font-sans text-sm text-white/80">
-              Your order has been <span className="font-bold text-green-400">delivered</span>. Enjoy!
+              {isPickup
+                ? <>Your order is <span className="font-bold text-green-400">ready for pickup</span>. Come collect it!</>
+                : <>Your order has been <span className="font-bold text-green-400">delivered</span>. Enjoy!</>
+              }
             </span>
           </div>
         )}
@@ -223,24 +228,47 @@ function TrackingView({ orderId, onReset }) {
         </AnimatePresence>
       </motion.div>
 
-      {/* Delivery info */}
+      {/* Delivery / Pickup info */}
       <motion.div variants={staggerItem} className="bg-white rounded-2xl border-2 border-espresso p-6 flex flex-col gap-4">
-        <h3 className="font-sans font-extrabold text-base text-espresso">Delivery Info</h3>
+        <h3 className="font-sans font-extrabold text-base text-espresso">
+          {isPickup ? 'Pickup Info' : 'Delivery Info'}
+        </h3>
         <div className="flex flex-col gap-3">
-          <div className="flex items-start gap-3">
-            <MapPin size={16} className="text-flame-orange mt-0.5 shrink-0" />
-            <div>
-              <p className="font-sans font-semibold text-sm text-espresso">Delivery Address</p>
-              <p className="font-sans text-sm text-muted-taupe">123 SG Highway, Bodakdev, Ahmedabad</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Phone size={16} className="text-flame-orange shrink-0" />
-            <div>
-              <p className="font-sans font-semibold text-sm text-espresso">Contact</p>
-              <p className="font-sans text-sm text-muted-taupe">+91 98765 43210</p>
-            </div>
-          </div>
+          {isPickup ? (
+            <>
+              <div className="flex items-start gap-3">
+                <Store size={16} className="text-flame-orange mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-sans font-semibold text-sm text-espresso">Pickup Location</p>
+                  <p className="font-sans text-sm text-muted-taupe">Big Burger — SG Highway, Bodakdev, Ahmedabad</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone size={16} className="text-flame-orange shrink-0" />
+                <div>
+                  <p className="font-sans font-semibold text-sm text-espresso">Branch Contact</p>
+                  <p className="font-sans text-sm text-muted-taupe">+91 79 1234 5678</p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-start gap-3">
+                <MapPin size={16} className="text-flame-orange mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-sans font-semibold text-sm text-espresso">Delivery Address</p>
+                  <p className="font-sans text-sm text-muted-taupe">123 SG Highway, Bodakdev, Ahmedabad</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone size={16} className="text-flame-orange shrink-0" />
+                <div>
+                  <p className="font-sans font-semibold text-sm text-espresso">Contact</p>
+                  <p className="font-sans text-sm text-muted-taupe">+91 98765 43210</p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </motion.div>
 
@@ -348,6 +376,7 @@ function SearchForm({ onTrack }) {
 export default function OrderTrackingPage() {
   const [searchParams] = useSearchParams()
   const [orderId, setOrderId] = useState(searchParams.get('id') || null)
+  const [orderType, setOrderType] = useState(searchParams.get('type') || 'delivery')
 
   return (
     <div className="min-h-screen bg-warm-cream pt-16">
@@ -390,7 +419,7 @@ export default function OrderTrackingPage() {
               exit={{ opacity: 0 }}
               className="max-w-2xl mx-auto"
             >
-              <TrackingView orderId={orderId} onReset={() => setOrderId(null)} />
+              <TrackingView orderId={orderId} orderType={orderType} onReset={() => setOrderId(null)} />
             </motion.div>
           ) : (
             <motion.div
