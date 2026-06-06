@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { staggerContainer, staggerItem, fadeUp } from '@/animations/motion'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 import {
   Package, ChevronRight, Clock, Bike, Store,
   CheckCircle, ArrowRight, ShoppingBag, Trash2,
@@ -106,14 +108,8 @@ function OrderCard({ order }) {
               {/* Actions */}
               <div className="flex gap-2 flex-wrap">
                 <Link
-                  to={`/track-order?id=${order.id}&type=${order.orderType}`}
-                  className="btn-primary text-xs px-4 py-2 gap-1.5"
-                >
-                  <Package size={13} /> Track Order
-                </Link>
-                <Link
                   to="/menu"
-                  className="btn-outline text-xs px-4 py-2 gap-1.5"
+                  className="btn-primary text-xs px-4 py-2 gap-1.5"
                 >
                   <ArrowRight size={13} /> Reorder
                 </Link>
@@ -128,19 +124,56 @@ function OrderCard({ order }) {
 
 // ─── Page ─────────────────────────────────────────────────────────
 export default function OrdersPage() {
+  const { user } = useAuth()
   const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('bigburger_orders') || '[]')
-      setOrders(saved)
-    } catch {
-      setOrders([])
+    if (user) {
+      // ── Load from Supabase ──────────────────────────────────────
+      supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .then(({ data }) => {
+          if (data) {
+            // Normalize to shape OrderCard expects
+            setOrders(data.map((o) => ({
+              id:        o.id.slice(0, 8).toUpperCase(),
+              date:      o.created_at,
+              orderType: o.order_type,
+              status:    o.status,
+              total:     o.total,
+              items:     o.order_items.map((i) => ({
+                id:    i.product_id,
+                name:  i.name,
+                price: i.price,
+                qty:   i.qty,
+                image: i.image,
+              })),
+            })))
+          }
+          setLoading(false)
+        })
+    } else {
+      // ── Fallback: load from localStorage if not logged in ───────
+      try {
+        const saved = JSON.parse(localStorage.getItem('bigburger_orders') || '[]')
+        setOrders(saved)
+      } catch {
+        setOrders([])
+      }
+      setLoading(false)
     }
-  }, [])
+  }, [user])
 
-  const clearHistory = () => {
-    localStorage.removeItem('bigburger_orders')
+  const clearHistory = async () => {
+    if (user) {
+      await supabase.from('orders').delete().eq('user_id', user.id)
+    } else {
+      localStorage.removeItem('bigburger_orders')
+    }
     setOrders([])
   }
 
@@ -173,8 +206,7 @@ export default function OrdersPage() {
             <motion.p variants={staggerItem} className="font-sans text-white/60 text-sm">
               {orders.length} order{orders.length !== 1 ? 's' : ''} placed
             </motion.p>
-          )}
-        </motion.div>
+          )}        </motion.div>
       </div>
 
       {/* Wave */}
@@ -187,8 +219,15 @@ export default function OrdersPage() {
       {/* ── Content ── */}
       <div className="max-w-container mx-auto px-6 py-10">
         <AnimatePresence mode="wait">
-          {orders.length === 0 ? (
-            /* Empty state */
+          {loading ? (
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="flex justify-center py-24">
+              <svg className="animate-spin w-8 h-8 text-flame-orange" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+              </svg>
+            </motion.div>
+          ) : orders.length === 0 ? (
             <motion.div
               key="empty"
               initial={{ opacity: 0, y: 12 }}
@@ -199,9 +238,7 @@ export default function OrdersPage() {
                 <ShoppingBag size={40} className="text-espresso/20" strokeWidth={1.5} />
               </div>
               <div>
-                <h2 className="font-display font-black text-display-md text-espresso">
-                  No orders yet
-                </h2>
+                <h2 className="font-display font-black text-display-md text-espresso">No orders yet</h2>
                 <p className="font-sans text-sm text-muted-taupe mt-2 max-w-xs">
                   Your order history will appear here after you place your first order.
                 </p>
@@ -212,7 +249,6 @@ export default function OrdersPage() {
             </motion.div>
           ) : (
             <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {/* Actions bar */}
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                 <p className="font-sans font-semibold text-sm text-muted-taupe">
                   {orders.length} order{orders.length !== 1 ? 's' : ''}
@@ -225,8 +261,6 @@ export default function OrdersPage() {
                   <Trash2 size={13} /> Clear History
                 </button>
               </div>
-
-              {/* Orders list */}
               <motion.div
                 variants={staggerContainer}
                 initial="hidden"

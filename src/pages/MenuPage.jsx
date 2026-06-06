@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, ShoppingBag } from 'lucide-react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { allProducts } from '@/data/products'
+import { supabase } from '@/lib/supabase'
 import { staggerContainer, staggerItem, fadeUp, viewportOnce } from '@/animations/motion'
 import { useCart } from '@/context/CartContext'
 
@@ -96,15 +97,27 @@ export default function MenuPage() {
     CATEGORIES.find((c) => c.id === initialCategory) ? initialCategory : 'all'
   )
   const [search, setSearch] = useState('')
+  const [products, setProducts] = useState(allProducts) // start with static data immediately
+
+  // Fetch from Supabase in background — replaces static data when ready
+  useEffect(() => {
+    supabase
+      .from('products')
+      .select('*')
+      .order('id')
+      .then(({ data }) => {
+        if (data && data.length > 0) setProducts(data)
+      })
+  }, [])
 
   const filtered = useMemo(() => {
-    return allProducts.filter((p) => {
+    return products.filter((p) => {
       const matchCat    = activeCategory === 'all' || p.category === activeCategory
       const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
                           p.ingredients.toLowerCase().includes(search.toLowerCase())
       return matchCat && matchSearch
     })
-  }, [activeCategory, search])
+  }, [products, activeCategory, search])
 
   return (
     /* Page wrapper */

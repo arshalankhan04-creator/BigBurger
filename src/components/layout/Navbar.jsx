@@ -110,9 +110,8 @@ export default function Navbar() {
               ))}
             </nav>
 
-            {/* ── Desktop: cart + CTA ── */}
+            {/* ── Desktop: theme + cart + CTA ── */}
             <div className="hidden md:flex items-center gap-3">
-              {/* Theme toggle */}
               <button
                 onClick={toggleTheme}
                 className="flex items-center justify-center w-10 h-10
@@ -151,9 +150,8 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* ── Mobile: cart + hamburger ── */}
+            {/* ── Mobile: theme + cart + hamburger ── */}
             <div className="md:hidden flex items-center gap-1">
-              {/* Theme toggle mobile */}
               <button
                 onClick={toggleTheme}
                 className="flex items-center justify-center w-10 h-10

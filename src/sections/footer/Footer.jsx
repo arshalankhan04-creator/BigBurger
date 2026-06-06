@@ -24,7 +24,6 @@ const footerLinks = {
     { label: 'My Orders',    to: '/orders' },
     { label: 'Rewards',      to: '/rewards' },
     { label: 'Deals',        to: '/deals' },
-    { label: 'Track Order',  to: '/track-order' },
     { label: 'FAQ',          to: '/faq' },
     { label: 'Locations',    to: '/location' },
     { label: 'Franchising',  disabled: true },

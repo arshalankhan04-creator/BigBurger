@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { CartProvider } from '@/context/CartContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { WishlistProvider } from '@/context/WishlistContext'
+import { AuthProvider } from '@/context/AuthContext'
 import MainLayout from '@/layouts/MainLayout'
 import Home from '@/pages/Home'
 import MenuPage from '@/pages/MenuPage'
@@ -14,10 +15,11 @@ import NotFoundPage from '@/pages/NotFoundPage'
 import ProductDetailPage from '@/pages/ProductDetailPage'
 import RewardsPage from '@/pages/RewardsPage'
 import DealsPage from '@/pages/DealsPage'
-import OrderTrackingPage from '@/pages/OrderTrackingPage'
 import WishlistPage from '@/pages/WishlistPage'
 import FaqPage from '@/pages/FaqPage'
 import OrdersPage from '@/pages/OrdersPage'
+import LoginPage from '@/pages/LoginPage'
+import AuthCallbackPage from '@/pages/AuthCallbackPage'
 import BurgerReveal from '@/components/common/BurgerReveal'
 import CartDrawer from '@/components/common/CartDrawer'
 
@@ -40,20 +42,21 @@ function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/"         element={<PageWrapper><Home /></PageWrapper>} />
-        <Route path="/menu"     element={<PageWrapper><MenuPage /></PageWrapper>} />
-        <Route path="/about"    element={<PageWrapper><AboutPage /></PageWrapper>} />
-        <Route path="/location" element={<PageWrapper><LocationPage /></PageWrapper>} />
-        <Route path="/contact"  element={<PageWrapper><ContactPage /></PageWrapper>} />
-        <Route path="/checkout" element={<PageWrapper><CheckoutPage /></PageWrapper>} />
+        <Route path="/"            element={<PageWrapper><Home /></PageWrapper>} />
+        <Route path="/menu"        element={<PageWrapper><MenuPage /></PageWrapper>} />
+        <Route path="/about"       element={<PageWrapper><AboutPage /></PageWrapper>} />
+        <Route path="/location"    element={<PageWrapper><LocationPage /></PageWrapper>} />
+        <Route path="/contact"     element={<PageWrapper><ContactPage /></PageWrapper>} />
         <Route path="/product/:id" element={<PageWrapper><ProductDetailPage /></PageWrapper>} />
-        <Route path="/rewards"     element={<PageWrapper><RewardsPage /></PageWrapper>} />
         <Route path="/deals"       element={<PageWrapper><DealsPage /></PageWrapper>} />
-        <Route path="/track-order" element={<PageWrapper><OrderTrackingPage /></PageWrapper>} />
-        <Route path="/wishlist"    element={<PageWrapper><WishlistPage /></PageWrapper>} />
         <Route path="/faq"         element={<PageWrapper><FaqPage /></PageWrapper>} />
+        <Route path="/checkout"    element={<PageWrapper><CheckoutPage /></PageWrapper>} />
         <Route path="/orders"      element={<PageWrapper><OrdersPage /></PageWrapper>} />
-        <Route path="*"            element={<PageWrapper><NotFoundPage /></PageWrapper>} />
+        <Route path="/rewards"     element={<PageWrapper><RewardsPage /></PageWrapper>} />
+        <Route path="/wishlist"      element={<PageWrapper><WishlistPage /></PageWrapper>} />
+        <Route path="/login"         element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="*"              element={<PageWrapper><NotFoundPage /></PageWrapper>} />
       </Routes>
     </AnimatePresence>
   )
@@ -63,15 +66,17 @@ export default function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <BurgerReveal />
-            <CartDrawer />
-            <MainLayout>
-              <AnimatedRoutes />
-            </MainLayout>
-          </WishlistProvider>
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <WishlistProvider>
+              <BurgerReveal />
+              <CartDrawer />
+              <MainLayout>
+                <AnimatedRoutes />
+              </MainLayout>
+            </WishlistProvider>
+          </CartProvider>
+        </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
   )

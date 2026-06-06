@@ -2,14 +2,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '@/context/CartContext'
-import { useEffect } from 'react'
+import { useEffect, forwardRef } from 'react'
 
 // ── Single cart item row ──────────────────────────────────────────
-function CartItem({ item }) {
+const CartItem = forwardRef(function CartItem({ item }, ref) {
   const { updateQty, removeItem } = useCart()
 
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
@@ -78,7 +79,7 @@ function CartItem({ item }) {
       </button>
     </motion.div>
   )
-}
+})
 
 // ── Cart Drawer ───────────────────────────────────────────────────
 export default function CartDrawer() {
