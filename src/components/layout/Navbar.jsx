@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { NavLink, Link } from 'react-router-dom'
-import { Menu, X, ShoppingBag, Sun, Moon } from 'lucide-react'
+import { Menu, X, ShoppingBag, Sun, Moon, LogOut, User, Heart, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCart } from '@/context/CartContext'
 import { useTheme } from '@/context/ThemeContext'
+import { useAuth } from '@/context/AuthContext'
+import AuthModal from '@/components/common/AuthModal'
 
 const navLinks = [
   { label: 'Home',     href: '/' },
@@ -49,11 +51,111 @@ function CartBadge({ count }) {
   )
 }
 
+// ── User Avatar + Dropdown ────────────────────────────────────────
+function UserMenu({ user, signOut }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const initials = user.user_metadata?.full_name
+    ? user.user_metadata.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : user.email?.[0].toUpperCase() ?? 'U'
+
+  const avatar = user.user_metadata?.avatar_url
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 focus-visible:outline-none group"
+        aria-label="User menu"
+        aria-expanded={open}
+      >
+        {/* Avatar */}
+        <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/30
+                        group-hover:border-flame-orange transition-colors duration-150 shrink-0">
+          {avatar ? (
+            <img src={avatar} alt="avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          ) : (
+            <div className="w-full h-full bg-flame-orange flex items-center justify-center
+                            font-sans font-black text-xs text-white">
+              {initials}
+            </div>
+          )}
+        </div>
+        {/* Name — desktop only */}
+        <span className="hidden lg:block font-sans font-semibold text-sm text-white/80
+                         group-hover:text-flame-orange transition-colors duration-150 max-w-[100px] truncate">
+          {user.user_metadata?.full_name?.split(' ')[0] ?? 'Account'}
+        </span>
+      </button>
+
+      {/* Dropdown */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl
+                       border-2 border-espresso shadow-xl overflow-hidden z-50"
+          >
+            {/* User info */}
+            <div className="px-4 py-3 border-b border-espresso/10">
+              <p className="font-sans font-bold text-sm text-espresso truncate">
+                {user.user_metadata?.full_name ?? 'User'}
+              </p>
+              <p className="font-sans text-xs text-muted-taupe truncate">{user.email}</p>
+            </div>
+
+            {/* Links */}
+            {[
+              { to: '/orders',   icon: ClipboardList, label: 'My Orders'  },
+              { to: '/wishlist', icon: Heart,         label: 'Wishlist'   },
+            ].map(({ to, icon: Icon, label }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 font-sans text-sm text-espresso
+                           hover:bg-soft-sand hover:text-flame-orange transition-colors duration-150"
+              >
+                <Icon size={15} className="shrink-0" />
+                {label}
+              </Link>
+            ))}
+
+            {/* Sign out */}
+            <button
+              onClick={() => { signOut(); setOpen(false) }}
+              className="w-full flex items-center gap-3 px-4 py-3 font-sans text-sm
+                         text-red-500 hover:bg-red-50 transition-colors duration-150
+                         border-t border-espresso/10"
+            >
+              <LogOut size={15} className="shrink-0" />
+              Sign Out
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 export default function Navbar() {
-  const [isOpen, setIsOpen]     = useState(false)
-  const [scrolled, setScrolled] = useState(false)
-  const { totalItems, openCart } = useCart()
-  const { isDark, toggleTheme } = useTheme()
+  const [isOpen, setIsOpen]         = useState(false)
+  const [scrolled, setScrolled]     = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const { totalItems, openCart }    = useCart()
+  const { isDark, toggleTheme }     = useTheme()
+  const { user, signOut }           = useAuth()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 12)
@@ -110,8 +212,9 @@ export default function Navbar() {
               ))}
             </nav>
 
-            {/* ── Desktop: theme + cart + CTA ── */}
+            {/* ── Desktop: theme + cart + auth ── */}
             <div className="hidden md:flex items-center gap-3">
+              {/* Theme toggle */}
               <button
                 onClick={toggleTheme}
                 className="flex items-center justify-center w-10 h-10
@@ -133,6 +236,7 @@ export default function Navbar() {
                 </AnimatePresence>
               </button>
 
+              {/* Cart */}
               <button
                 onClick={openCart}
                 className="relative flex items-center justify-center w-10 h-10
@@ -145,9 +249,21 @@ export default function Navbar() {
                 <CartBadge count={totalItems} />
               </button>
 
-              <Link to="/menu" className="btn-primary text-sm">
-                Order Now
-              </Link>
+              {/* Auth */}
+              {user ? (
+                <UserMenu user={user} signOut={signOut} />
+              ) : (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center gap-2 font-sans font-semibold text-sm
+                             bg-white/10 hover:bg-flame-orange text-white
+                             px-4 py-2 rounded-sm border border-white/20 hover:border-flame-orange
+                             transition-all duration-150"
+                >
+                  <User size={15} />
+                  Sign In
+                </button>
+              )}
             </div>
 
             {/* ── Mobile: theme + cart + hamburger ── */}
@@ -234,18 +350,68 @@ export default function Navbar() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0, transition: { delay: 0.35, duration: 0.3 } }}
+              className="flex flex-col gap-3"
             >
-              <Link
-                to="/menu"
-                onClick={() => setIsOpen(false)}
-                className="btn-primary w-full justify-center text-base"
-              >
-                Order Now
-              </Link>
+              {user ? (
+                <>
+                  {/* Logged-in user info */}
+                  <div className="flex items-center gap-3 py-3 border-t border-white/10">
+                    {user.user_metadata?.avatar_url ? (
+                      <img
+                        src={user.user_metadata.avatar_url}
+                        alt="avatar"
+                        className="w-10 h-10 rounded-full border-2 border-flame-orange"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-flame-orange flex items-center justify-center
+                                      font-sans font-black text-sm text-white">
+                        {user.email?.[0].toUpperCase()}
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="font-sans font-bold text-sm text-white">
+                        {user.user_metadata?.full_name ?? 'User'}
+                      </span>
+                      <span className="font-sans text-xs text-white/50">{user.email}</span>
+                    </div>
+                  </div>
+                  <Link to="/orders"   onClick={() => setIsOpen(false)} className="btn-outline text-white border-white/30 text-sm">My Orders</Link>
+                  <Link to="/wishlist" onClick={() => setIsOpen(false)} className="btn-outline text-white border-white/30 text-sm">Wishlist</Link>
+                  <button onClick={() => { signOut(); setIsOpen(false) }}
+                    className="w-full py-3 font-sans font-semibold text-sm text-red-400 border border-red-400/30 rounded-sm">
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => { setIsOpen(false); setShowAuthModal(true) }}
+                    className="w-full flex items-center justify-center gap-2 font-sans font-semibold
+                               text-sm bg-white text-espresso py-3.5 rounded-sm"
+                  >
+                    <User size={15} /> Sign In with Google
+                  </button>
+                  <Link
+                    to="/menu"
+                    onClick={() => setIsOpen(false)}
+                    className="btn-primary w-full justify-center text-base"
+                  >
+                    Order Now
+                  </Link>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Auth Modal ── */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        reason="default"
+      />
     </>
   )
 }

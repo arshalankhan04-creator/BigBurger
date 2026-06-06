@@ -2,7 +2,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '@/context/CartContext'
-import { useEffect, forwardRef } from 'react'
+import { useAuth } from '@/context/AuthContext'
+import { useEffect, forwardRef, useState } from 'react'
+import AuthModal from '@/components/common/AuthModal'
 
 // ── Single cart item row ──────────────────────────────────────────
 const CartItem = forwardRef(function CartItem({ item }, ref) {
@@ -84,6 +86,8 @@ const CartItem = forwardRef(function CartItem({ item }, ref) {
 // ── Cart Drawer ───────────────────────────────────────────────────
 export default function CartDrawer() {
   const { items, isOpen, closeCart, subtotal, totalItems, clearCart } = useCart()
+  const { user } = useAuth()
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   // Close on Escape
   useEffect(() => {
@@ -102,6 +106,7 @@ export default function CartDrawer() {
   const total = subtotal + deliveryFee
 
   return (
+    <>
     <AnimatePresence>
       {isOpen && (
         <>
@@ -238,14 +243,24 @@ export default function CartDrawer() {
                   </div>
 
                   {/* Checkout button */}
-                  <Link
-                    to="/checkout"
-                    onClick={closeCart}
-                    className="btn-primary w-full justify-center gap-2 text-base"
-                  >
-                    Proceed to Checkout
-                    <ArrowRight size={16} />
-                  </Link>
+                  {user ? (
+                    <Link
+                      to="/checkout"
+                      onClick={closeCart}
+                      className="btn-primary w-full justify-center gap-2 text-base"
+                    >
+                      Proceed to Checkout
+                      <ArrowRight size={16} />
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => setShowAuthModal(true)}
+                      className="btn-primary w-full justify-center gap-2 text-base"
+                    >
+                      Proceed to Checkout
+                      <ArrowRight size={16} />
+                    </button>
+                  )}
 
                   <Link
                     to="/menu"
@@ -262,5 +277,11 @@ export default function CartDrawer() {
         </>
       )}
     </AnimatePresence>
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        reason="checkout"
+      />
+    </>
   )
 }

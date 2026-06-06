@@ -2,24 +2,15 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft,
-  Star,
-  Flame,
-  ShoppingCart,
-  Plus,
-  Minus,
-  Heart,
-  Share2,
-  ChevronRight,
-  Zap,
-  Leaf,
-  Clock,
-  ThumbsUp,
+  ArrowLeft, Star, Flame, ShoppingCart, Plus, Minus,
+  Heart, Share2, ChevronRight, Zap, Leaf, Clock, ThumbsUp,
 } from 'lucide-react'
 import { allProducts } from '@/data/products'
 import { getReviewsForProduct, getRatingSummary } from '@/data/reviews'
 import { useCart } from '@/context/CartContext'
-import { useWishlist } from '@/context/WishlistContext'
+import { useWishlist, setWishlistAuthTrigger } from '@/context/WishlistContext'
+import { useAuth } from '@/context/AuthContext'
+import AuthModal from '@/components/common/AuthModal'
 import { staggerContainer, staggerItem, fadeUp, scaleIn } from '@/animations/motion'
 import useRecentlyViewed from '@/hooks/useRecentlyViewed'
 
@@ -220,6 +211,14 @@ export default function ProductDetailPage() {
   const navigate = useNavigate()
   const { addItem, openCart } = useCart()
   const { toggle: toggleWishlist, isWishlisted } = useWishlist()
+  const { user } = useAuth()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  // Register auth trigger for wishlist context
+  useEffect(() => {
+    setWishlistAuthTrigger(() => setShowAuthModal(true))
+    return () => setWishlistAuthTrigger(null)
+  }, [])
 
   const product = allProducts.find((p) => p.id === Number(id))
 
@@ -616,6 +615,13 @@ export default function ProductDetailPage() {
       <div className="max-w-container mx-auto px-6 pb-8">
         <ReviewsSection productId={product.id} />
       </div>
+
+      {/* ── Auth Modal ── */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        reason="wishlist"
+      />
 
       {/* ── Mobile Sticky Add to Cart Bar (hidden on lg+) ── */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[980]

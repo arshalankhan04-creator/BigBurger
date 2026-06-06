@@ -4,6 +4,10 @@ import { useAuth } from '@/context/AuthContext'
 
 const WishlistContext = createContext(null)
 
+// Global setter so AuthModal trigger can be registered from anywhere
+let _requireAuth = null
+export function setWishlistAuthTrigger(fn) { _requireAuth = fn }
+
 function loadFromStorage() {
   try {
     return JSON.parse(localStorage.getItem('bigburger_wishlist') || '[]')
@@ -37,6 +41,12 @@ export function WishlistProvider({ children }) {
   }, [ids, user])
 
   const toggle = useCallback(async (id) => {
+    // If not logged in, fire the auth modal instead
+    if (!user) {
+      if (_requireAuth) _requireAuth()
+      return
+    }
+
     const isIn = ids.includes(id)
 
     // Optimistic update

@@ -1,10 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Heart, ShoppingCart, Trash2, ArrowRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { staggerContainer, staggerItem, fadeUp } from '@/animations/motion'
-import { useWishlist } from '@/context/WishlistContext'
+import { useWishlist, setWishlistAuthTrigger } from '@/context/WishlistContext'
 import { useCart } from '@/context/CartContext'
 import { allProducts } from '@/data/products'
+import AuthModal from '@/components/common/AuthModal'
 
 function WishlistCard({ product }) {
   const { toggle } = useWishlist()
@@ -88,6 +90,12 @@ function WishlistCard({ product }) {
 export default function WishlistPage() {
   const { ids, clear, count } = useWishlist()
   const { addItem, openCart } = useCart()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  useEffect(() => {
+    setWishlistAuthTrigger(() => setShowAuthModal(true))
+    return () => setWishlistAuthTrigger(null)
+  }, [])
 
   const wishlistProducts = ids
     .map((id) => allProducts.find((p) => p.id === id))
@@ -217,6 +225,12 @@ export default function WishlistPage() {
           )}
         </AnimatePresence>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        reason="wishlist"
+      />
     </div>
   )
 }
