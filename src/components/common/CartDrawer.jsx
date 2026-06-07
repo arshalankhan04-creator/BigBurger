@@ -1,10 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react'
+import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
 import { useEffect, forwardRef, useState } from 'react'
 import AuthModal from '@/components/common/AuthModal'
+import { isRestaurantOpen, getRestaurantStatus } from '@/lib/restaurantHours'
 
 // ── Single cart item row ──────────────────────────────────────────
 const CartItem = forwardRef(function CartItem({ item }, ref) {
@@ -242,24 +243,37 @@ export default function CartDrawer() {
                     </div>
                   </div>
 
-                  {/* Checkout button */}
-                  {user ? (
-                    <Link
-                      to="/checkout"
-                      onClick={closeCart}
-                      className="btn-primary w-full justify-center gap-2 text-base"
-                    >
-                      Proceed to Checkout
-                      <ArrowRight size={16} />
-                    </Link>
+                  {/* Checkout button — blocked when restaurant is closed */}
+                  {isRestaurantOpen() ? (
+                    user ? (
+                      <Link
+                        to="/checkout"
+                        onClick={closeCart}
+                        className="btn-primary w-full justify-center gap-2 text-base"
+                      >
+                        Proceed to Checkout
+                        <ArrowRight size={16} />
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => setShowAuthModal(true)}
+                        className="btn-primary w-full justify-center gap-2 text-base"
+                      >
+                        Proceed to Checkout
+                        <ArrowRight size={16} />
+                      </button>
+                    )
                   ) : (
-                    <button
-                      onClick={() => setShowAuthModal(true)}
-                      className="btn-primary w-full justify-center gap-2 text-base"
-                    >
-                      Proceed to Checkout
-                      <ArrowRight size={16} />
-                    </button>
+                    <div className="flex flex-col items-center gap-2 bg-espresso/5
+                                    border-2 border-espresso/20 rounded-xl px-4 py-3 text-center">
+                      <div className="flex items-center gap-2 text-espresso">
+                        <Clock size={16} className="shrink-0" />
+                        <span className="font-sans font-bold text-sm">We're Closed</span>
+                      </div>
+                      <p className="font-sans text-xs text-muted-taupe">
+                        {getRestaurantStatus()}
+                      </p>
+                    </div>
                   )}
 
                   <Link
