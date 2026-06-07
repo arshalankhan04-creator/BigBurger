@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { NavLink, Link } from 'react-router-dom'
-import { Menu, X, ShoppingBag, Sun, Moon, LogOut, User, Heart, ClipboardList } from 'lucide-react'
+import { Menu, X, ShoppingBag, LogOut, User, Heart, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCart } from '@/context/CartContext'
-import { useTheme } from '@/context/ThemeContext'
 import { useAuth } from '@/context/AuthContext'
 import AuthModal from '@/components/common/AuthModal'
 
@@ -154,7 +153,6 @@ export default function Navbar() {
   const [scrolled, setScrolled]     = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const { totalItems, openCart }    = useCart()
-  const { isDark, toggleTheme }     = useTheme()
   const { user, signOut }           = useAuth()
 
   useEffect(() => {
@@ -212,30 +210,8 @@ export default function Navbar() {
               ))}
             </nav>
 
-            {/* ── Desktop: theme + cart + auth ── */}
+            {/* ── Desktop: cart + auth ── */}
             <div className="hidden md:flex items-center gap-3">
-              {/* Theme toggle */}
-              <button
-                onClick={toggleTheme}
-                className="flex items-center justify-center w-10 h-10
-                           text-white hover:text-flame-orange transition-colors duration-150
-                           focus-visible:outline-none focus-visible:ring-2
-                           focus-visible:ring-flame-orange rounded-sm"
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                <AnimatePresence mode="wait">
-                  {isDark ? (
-                    <motion.div key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <Sun size={20} strokeWidth={2} />
-                    </motion.div>
-                  ) : (
-                    <motion.div key="moon" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <Moon size={20} strokeWidth={2} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </button>
-
               {/* Cart */}
               <button
                 onClick={openCart}
@@ -266,18 +242,8 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* ── Mobile: theme + cart + hamburger ── */}
+            {/* ── Mobile: cart + hamburger ── */}
             <div className="md:hidden flex items-center gap-1">
-              <button
-                onClick={toggleTheme}
-                className="flex items-center justify-center w-10 h-10
-                           text-white hover:text-flame-orange transition-colors duration-150
-                           focus-visible:outline-none rounded-sm"
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {isDark ? <Sun size={18} strokeWidth={2} /> : <Moon size={18} strokeWidth={2} />}
-              </button>
-
               <button
                 onClick={openCart}
                 className="relative flex items-center justify-center w-10 h-10

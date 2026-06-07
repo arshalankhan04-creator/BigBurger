@@ -39,18 +39,6 @@
   --radius:             0.5rem;
 }
 
-/* ─── Dark Mode Variables ────────────────────────────────────── */
-.dark {
-  --color-espresso:      #F5EDE8;
-  --color-warm-cream:    #1A0F0A;
-  --color-soft-sand:     #2A1A12;
-  --color-muted-taupe:   #A89890;
-  --color-white:         #231510;
-
-  --border-default: 1.5px solid rgba(245, 237, 232, 0.15);
-  --border-strong:  2px solid rgba(245, 237, 232, 0.15);
-}
-
 /* ─── Base Reset ─────────────────────────────────────────────── */
 *,
 *::before,
