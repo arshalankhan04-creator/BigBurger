@@ -380,7 +380,7 @@ function PaymentStep({ data, setData, onNext, onBack, orderType }) {
 }
 
 // ─── Step 3: Review & confirm ─────────────────────────────────────
-function ReviewStep({ delivery, payment, items, subtotal, onBack, onConfirm, loading }) {
+function ReviewStep({ delivery, payment, items, subtotal, onBack, onConfirm, loading, orderError }) {
   const deliveryFee = delivery.orderType === 'delivery' ? getDeliveryFee(subtotal) : 0
   return (
     <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="flex flex-col gap-6">
@@ -428,6 +428,18 @@ function ReviewStep({ delivery, payment, items, subtotal, onBack, onConfirm, loa
           ₹{(subtotal + deliveryFee).toFixed(2)}
         </span>
       </motion.div>
+
+      {/* Order error — stock or closed */}
+      {orderError && (
+        <motion.div
+          variants={staggerItem}
+          className="flex items-start gap-3 bg-red-50 border-2 border-red-200
+                     rounded-xl px-4 py-3"
+        >
+          <span className="text-red-500 text-lg shrink-0">⚠️</span>
+          <p className="font-sans text-sm text-red-700 leading-relaxed">{orderError}</p>
+        </motion.div>
+      )}
 
       <motion.div variants={staggerItem} className="flex gap-3">
         <button onClick={onBack} className="btn-outline gap-2">Back</button>
@@ -501,8 +513,9 @@ export default function CheckoutPage() {
     phone: '', email: '', address: '', city: 'Ahmedabad', pincode: '', notes: '',
   })
   const [payment, setPayment] = useState({ paymentMethod: 'cash' })
-  const [errors, setErrors]   = useState({})
-  const [promo, setPromo]     = useState(null)
+  const [errors, setErrors]       = useState({})
+  const [promo, setPromo]         = useState(null)
+  const [orderError, setOrderError] = useState('') // stock/closed error on confirm
 
   // Redirect to menu if cart is empty
   if (items.length === 0 && !success) {
@@ -541,14 +554,41 @@ export default function CheckoutPage() {
 
   const handleConfirm = async () => {
     // Double-check restaurant is open at time of placing order
-    if (!isRestaurantOpen()) return
+    if (!isRestaurantOpen()) {
+      setOrderError('Sorry, we are currently closed. We are open 10 AM – 11 PM IST.')
+      return
+    }
 
+    setOrderError('')
     setLoading(true)
     const deliveryFee = delivery.orderType === 'delivery' ? getDeliveryFee(subtotal) : 0
     const total = subtotal + deliveryFee
 
     try {
-      // ── Save to Supabase if logged in ──────────────────────────
+      // ── Step 1: Check stock for all items before saving order ──
+      const stockChecks = await Promise.all(
+        items.map((item) =>
+          supabase
+            .from('products')
+            .select('id, name, stock')
+            .eq('id', item.id)
+            .single()
+        )
+      )
+
+      const unavailable = stockChecks
+        .filter(({ data }) => data && data.stock < 1)
+        .map(({ data }) => data.name)
+
+      if (unavailable.length > 0) {
+        setOrderError(
+          `Sorry, the following item${unavailable.length > 1 ? 's are' : ' is'} out of stock: ${unavailable.join(', ')}. Please remove ${unavailable.length > 1 ? 'them' : 'it'} from your cart.`
+        )
+        setLoading(false)
+        return
+      }
+
+      // ── Step 2: Save order to Supabase ─────────────────────────
       if (user) {
         const { data: order, error: orderError } = await supabase
           .from('orders')
@@ -578,6 +618,21 @@ export default function CheckoutPage() {
 
         if (itemsError) throw itemsError
 
+        // ── Step 3: Decrement stock atomically ──────────────────
+        for (const item of items) {
+          const { error: stockError } = await supabase
+            .rpc('decrement_stock', { p_product_id: item.id, p_qty: item.qty })
+
+          if (stockError) {
+            // Parse OUT_OF_STOCK error from the SQL function
+            if (stockError.message?.includes('OUT_OF_STOCK:')) {
+              const name = stockError.message.split('OUT_OF_STOCK:')[1]
+              throw new Error(`OUT_OF_STOCK:${name}`)
+            }
+            throw stockError
+          }
+        }
+
         setOrderId(order.id.slice(0, 8).toUpperCase())
       } else {
         // ── Fallback: save to localStorage if not logged in ──────
@@ -599,13 +654,16 @@ export default function CheckoutPage() {
 
       clearCart()
       setSuccess(true)
+
     } catch (err) {
-      console.error('Order failed:', err)
-      // Still show success to user — order saved locally as fallback
-      const newOrderId = 'BB' + Math.random().toString(36).substring(2, 8).toUpperCase()
-      setOrderId(newOrderId)
-      clearCart()
-      setSuccess(true)
+      // Surface stock errors clearly — don't silently succeed
+      if (err.message?.includes('OUT_OF_STOCK:')) {
+        const name = err.message.split('OUT_OF_STOCK:')[1]
+        setOrderError(`"${name}" just went out of stock. Please remove it from your cart and try again.`)
+      } else {
+        setOrderError('Something went wrong placing your order. Please try again.')
+        console.error('Order failed:', err)
+      }
     } finally {
       setLoading(false)
     }
@@ -651,7 +709,7 @@ export default function CheckoutPage() {
                   )}
                   {step === 2 && (
                     <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
-                      <ReviewStep delivery={delivery} payment={payment} items={items} subtotal={subtotal} onBack={() => setStep(1)} onConfirm={handleConfirm} loading={loading} />
+                      <ReviewStep delivery={delivery} payment={payment} items={items} subtotal={subtotal} onBack={() => setStep(1)} onConfirm={handleConfirm} loading={loading} orderError={orderError} />
                     </motion.div>
                   )}
                 </AnimatePresence>
