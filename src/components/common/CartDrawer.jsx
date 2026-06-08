@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useEffect, forwardRef, useState } from 'react'
 import AuthModal from '@/components/common/AuthModal'
 import { isRestaurantOpen, getRestaurantStatus } from '@/lib/restaurantHours'
+import { getDeliveryFee } from '@/pages/CheckoutPage'
 
 // ── Single cart item row ──────────────────────────────────────────
 const CartItem = forwardRef(function CartItem({ item }, ref) {
@@ -103,7 +104,7 @@ export default function CartDrawer() {
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
-  const deliveryFee = subtotal > 0 ? 5.00 : 0
+  const deliveryFee = subtotal > 0 ? getDeliveryFee(subtotal) : 0
   const total = subtotal + deliveryFee
 
   return (
@@ -230,9 +231,16 @@ export default function CartDrawer() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-sans text-sm text-muted-taupe">Delivery</span>
+                      <div className="flex flex-col">
+                        <span className="font-sans text-sm text-muted-taupe">Delivery</span>
+                        {subtotal > 0 && subtotal < 500 && (
+                          <span className="font-sans text-xs text-muted-taupe/60">
+                            {subtotal < 200 ? 'Free above ₹500' : '₹20 · Free above ₹500'}
+                          </span>
+                        )}
+                      </div>
                       <span className="font-sans font-semibold text-sm text-espresso">
-                        ₹{deliveryFee.toFixed(2)}
+                        {deliveryFee === 0 ? '🎉 Free' : `₹${deliveryFee.toFixed(2)}`}
                       </span>
                     </div>
                     <div className="border-t border-espresso/10 pt-2 flex justify-between">

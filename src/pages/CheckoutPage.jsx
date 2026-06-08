@@ -1,14 +1,26 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
-import { ShoppingBag, ChevronRight, CheckCircle, Truck, Store, CreditCard, Banknote, Tag, X } from 'lucide-react'
+import { ShoppingBag, ChevronRight, CheckCircle, Truck, Store, CreditCard, Banknote, Tag, X, Clock } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { isRestaurantOpen, getRestaurantStatus } from '@/lib/restaurantHours'
 import { staggerContainer, staggerItem, fadeUp } from '@/animations/motion'
 
-// ─── Constants ───────────────────────────────────────────────────
-const DELIVERY_FEE = 5.00
+// ─── Delivery fee tiers ───────────────────────────────────────────
+// 0–199 → ₹40 | 200–499 → ₹20 | 500+ → Free
+export function getDeliveryFee(subtotal) {
+  if (subtotal >= 500) return 0
+  if (subtotal >= 200) return 20
+  return 40
+}
+
+export function getDeliveryLabel(subtotal) {
+  if (subtotal >= 500) return 'Free'
+  if (subtotal >= 200) return '₹20 · Free above ₹500'
+  return '₹40 · Free above ₹500'
+}
 
 // ─── Valid promo codes (synced with DealsPage) ───────────────────
 const PROMO_CODES = {
@@ -68,7 +80,7 @@ function Field({ label, error, children }) {
 
 // ─── Order summary sidebar ────────────────────────────────────────
 function OrderSummary({ items, subtotal, orderType, promo }) {
-  const delivery = orderType === 'delivery' ? DELIVERY_FEE : 0
+  const baseDelivery = orderType === 'delivery' ? getDeliveryFee(subtotal) : 0
 
   // Calculate discount
   let discount = 0
@@ -76,7 +88,7 @@ function OrderSummary({ items, subtotal, orderType, promo }) {
     if (promo.type === 'percent') discount = Math.round(subtotal * promo.value / 100)
     else if (promo.type === 'flat' && subtotal >= (promo.minOrder || 0)) discount = promo.value
   }
-  const discountedDelivery = promo?.type === 'delivery' ? 0 : delivery
+  const discountedDelivery = promo?.type === 'delivery' ? 0 : baseDelivery
   const total = subtotal - discount + discountedDelivery
 
   return (
@@ -103,22 +115,36 @@ function OrderSummary({ items, subtotal, orderType, promo }) {
           <span className="font-sans text-sm text-muted-taupe">Subtotal</span>
           <span className="font-sans font-semibold text-sm text-espresso">₹{subtotal.toFixed(2)}</span>
         </div>
-        {promo && (discount > 0 || promo.type === 'delivery') && (
-          <div className="flex justify-between">
-            <span className="font-sans text-sm text-green-600 font-semibold">
-              {promo.type === 'delivery' ? 'Free Delivery' : `Discount`}
-            </span>
-            <span className="font-sans font-semibold text-sm text-green-600">
-              {promo.type === 'delivery' ? `-₹${delivery.toFixed(2)}` : `-₹${discount.toFixed(2)}`}
+
+        {/* Delivery with tier info */}
+        {orderType === 'delivery' && (
+          <div className="flex justify-between items-start">
+            <div className="flex flex-col">
+              <span className="font-sans text-sm text-muted-taupe">Delivery</span>
+              {subtotal < 500 && (
+                <span className="font-sans text-xs text-muted-taupe/70">
+                  {subtotal < 200 ? '₹40 · Free above ₹500' : '₹20 · Free above ₹500'}
+                </span>
+              )}
+            </div>
+            <span className={`font-sans font-semibold text-sm ${promo?.type === 'delivery' || baseDelivery === 0 ? 'text-green-600' : 'text-espresso'}`}>
+              {promo?.type === 'delivery' ? 'Free' : baseDelivery === 0 ? '🎉 Free' : `₹${baseDelivery.toFixed(2)}`}
             </span>
           </div>
         )}
-        <div className="flex justify-between">
-          <span className="font-sans text-sm text-muted-taupe">Delivery</span>
-          <span className="font-sans font-semibold text-sm text-espresso">
-            {discountedDelivery === 0 ? 'Free' : `₹${discountedDelivery.toFixed(2)}`}
-          </span>
-        </div>
+
+        {/* Discount row */}
+        {promo && (discount > 0 || promo.type === 'delivery') && (
+          <div className="flex justify-between">
+            <span className="font-sans text-sm text-green-600 font-semibold">
+              Discount ({promo.code})
+            </span>
+            <span className="font-sans font-semibold text-sm text-green-600">
+              {promo.type === 'delivery' ? `-₹${baseDelivery.toFixed(2)}` : `-₹${discount.toFixed(2)}`}
+            </span>
+          </div>
+        )}
+
         <div className="border-t border-espresso/10 pt-2 flex justify-between">
           <span className="font-sans font-bold text-base text-espresso">Total</span>
           <span className="font-sans font-black text-xl text-flame-orange">₹{total.toFixed(2)}</span>
@@ -355,7 +381,7 @@ function PaymentStep({ data, setData, onNext, onBack, orderType }) {
 
 // ─── Step 3: Review & confirm ─────────────────────────────────────
 function ReviewStep({ delivery, payment, items, subtotal, onBack, onConfirm, loading }) {
-  const deliveryFee = delivery.orderType === 'delivery' ? DELIVERY_FEE : 0
+  const deliveryFee = delivery.orderType === 'delivery' ? getDeliveryFee(subtotal) : 0
   return (
     <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="flex flex-col gap-6">
       <motion.div variants={staggerItem}>
@@ -514,8 +540,11 @@ export default function CheckoutPage() {
   }
 
   const handleConfirm = async () => {
+    // Double-check restaurant is open at time of placing order
+    if (!isRestaurantOpen()) return
+
     setLoading(true)
-    const deliveryFee = delivery.orderType === 'delivery' ? DELIVERY_FEE : 0
+    const deliveryFee = delivery.orderType === 'delivery' ? getDeliveryFee(subtotal) : 0
     const total = subtotal + deliveryFee
 
     try {
