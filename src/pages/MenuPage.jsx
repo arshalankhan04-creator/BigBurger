@@ -4,7 +4,7 @@ import { Search, ShoppingBag } from 'lucide-react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { allProducts } from '@/data/products'
 import { supabase } from '@/lib/supabase'
-import { staggerContainer, staggerItem, fadeUp, viewportOnce } from '@/animations/motion'
+import { staggerContainer, staggerItem, fadeUp } from '@/animations/motion'
 import { useCart } from '@/context/CartContext'
 
 const CATEGORIES = [
@@ -20,22 +20,26 @@ const CATEGORIES = [
 function MenuCard({ product }) {
   const navigate = useNavigate()
   const { addItem, openCart } = useCart()
+  const outOfStock = product.stock === 0
 
   const handleQuickAdd = (e) => {
     e.stopPropagation()
+    if (outOfStock) return
     addItem(product, 1)
     openCart()
   }
+
   return (
     <motion.div
       layout
       variants={staggerItem}
-      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+      whileHover={{ y: outOfStock ? 0 : -6, transition: { duration: 0.2 } }}
       whileTap={{ scale: 0.97 }}
       onClick={() => navigate(`/product/${product.id}`)}
-      className="bg-white rounded-xl border-2 border-espresso
+      className={`bg-white rounded-xl border-2 border-espresso
                  overflow-hidden cursor-pointer group
-                 flex flex-col shadow-card"
+                 flex flex-col shadow-card
+                 ${outOfStock ? 'opacity-75' : ''}`}
       role="button"
       tabIndex={0}
       aria-label={`View ${product.name} details`}
@@ -46,18 +50,24 @@ function MenuCard({ product }) {
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-300
-                     group-hover:scale-105"
+          className={`w-full h-full object-cover transition-transform duration-300
+                     ${outOfStock ? 'grayscale' : 'group-hover:scale-105'}`}
           loading="lazy"
         />
-        {/* Badge */}
-        {product.badge && (
+        {/* Out of stock badge — takes priority over regular badge */}
+        {outOfStock ? (
+          <span className="absolute top-3 left-3 bg-gray-800 text-white
+                           font-sans font-bold text-xs px-2.5 py-1
+                           rounded-sm tracking-wide">
+            Out of Stock
+          </span>
+        ) : product.badge ? (
           <span className="absolute top-3 left-3 bg-flame-orange text-white
                            font-sans font-bold text-xs px-2.5 py-1
                            rounded-sm tracking-wide">
             {product.badge}
           </span>
-        )}
+        ) : null}
       </div>
 
       {/* Info */}
@@ -70,16 +80,19 @@ function MenuCard({ product }) {
           {product.ingredients}
         </p>
         <div className="flex items-center justify-between mt-2">
-          <span className="font-sans font-black text-xl text-flame-orange">
+          <span className={`font-sans font-black text-xl ${outOfStock ? 'text-muted-taupe' : 'text-flame-orange'}`}>
             ₹{product.price.toFixed(2)}
           </span>
           <button
             onClick={handleQuickAdd}
-            className="w-8 h-8 rounded-sm bg-espresso text-white
-                       flex items-center justify-center
-                       hover:bg-flame-orange transition-colors duration-150
-                       focus-visible:outline-none"
-            aria-label={`Quick add ${product.name} to cart`}
+            disabled={outOfStock}
+            className={`w-8 h-8 rounded-sm flex items-center justify-center
+                       transition-colors duration-150
+                       ${outOfStock
+                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                         : 'bg-espresso text-white hover:bg-flame-orange'
+                       }`}
+            aria-label={outOfStock ? `${product.name} is out of stock` : `Quick add ${product.name} to cart`}
           >
             <ShoppingBag size={14} strokeWidth={2.5} />
           </button>
