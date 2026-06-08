@@ -3,9 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Star, Flame, ShoppingCart, Plus, Minus,
-  Heart, Share2, ChevronRight, Zap, Leaf, Clock, ThumbsUp,
+  Heart, Share2, ChevronRight, Zap, Leaf, Clock, ThumbsUp, AlertTriangle,
 } from 'lucide-react'
 import { allProducts } from '@/data/products'
+import { supabase } from '@/lib/supabase'
 import { getReviewsForProduct, getRatingSummary } from '@/data/reviews'
 import { useCart } from '@/context/CartContext'
 import { useWishlist, setWishlistAuthTrigger } from '@/context/WishlistContext'
@@ -220,12 +221,30 @@ export default function ProductDetailPage() {
     return () => setWishlistAuthTrigger(null)
   }, [])
 
-  const product = allProducts.find((p) => p.id === Number(id))
+  // ── Fetch product from Supabase (static data as instant fallback) ──
+  const staticProduct = allProducts.find((p) => p.id === Number(id))
+  const [product, setProduct] = useState(staticProduct ?? null)
+  const [loadingProduct, setLoadingProduct] = useState(true)
+
+  useEffect(() => {
+    setLoadingProduct(true)
+    supabase
+      .from('products')
+      .select('*')
+      .eq('id', Number(id))
+      .single()
+      .then(({ data }) => {
+        if (data) setProduct(data)
+        setLoadingProduct(false)
+      })
+  }, [id])
+
+  const outOfStock = product?.stock === 0
 
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
 
-  // Related products — same category, exclude current
+  // Related products — same category, exclude current (from static data for speed)
   const related = allProducts
     .filter((p) => p.category === product?.category && p.id !== product?.id)
     .slice(0, 4)
@@ -240,8 +259,8 @@ export default function ProductDetailPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [id])
 
-  // 404 state
-  if (!product) {
+  // 404 state — only after Supabase has responded
+  if (!loadingProduct && !product) {
     return (
       <div className="min-h-screen bg-warm-cream flex flex-col items-center justify-center gap-6 px-6">
         <p className="font-display font-black text-4xl text-espresso">Item not found</p>
@@ -250,7 +269,17 @@ export default function ProductDetailPage() {
     )
   }
 
+  // Loading skeleton — only if no static fallback was found
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-warm-cream flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-4 border-flame-orange border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
   const handleAddToCart = () => {
+    if (outOfStock) return
     for (let i = 0; i < qty; i++) addItem(product)
     setAdded(true)
     setTimeout(() => {
@@ -313,14 +342,20 @@ export default function ProductDetailPage() {
                 className="w-full h-full object-cover"
               />
 
-              {/* Badge */}
-              {product.badge && (
+              {/* Badge — Out of Stock takes priority */}
+              {outOfStock ? (
+                <span className="absolute top-4 left-4 bg-gray-800 text-white
+                                 font-sans font-bold text-xs px-3 py-1.5 rounded-full
+                                 shadow-md">
+                  Out of Stock
+                </span>
+              ) : product.badge ? (
                 <span className="absolute top-4 left-4 bg-flame-orange text-white
                                  font-sans font-bold text-xs px-3 py-1.5 rounded-full
                                  shadow-md">
                   {product.badge}
                 </span>
-              )}
+              ) : null}
 
               {/* Wishlist button */}
               <button
@@ -386,9 +421,12 @@ export default function ProductDetailPage() {
                 <span className="font-sans font-bold text-sm text-espresso ml-1">4.8</span>
               </div>
               <span className="text-muted-taupe text-sm font-sans">(240+ reviews)</span>
-              <span className="flex items-center gap-1 text-sm font-sans text-green-600 font-medium">
-                <Zap size={14} />
-                In stock
+              <span className={`flex items-center gap-1 text-sm font-sans font-medium
+                              ${outOfStock ? 'text-red-500' : 'text-green-600'}`}>
+                {outOfStock
+                  ? <><AlertTriangle size={14} /> Out of Stock</>
+                  : <><Zap size={14} /> In stock</>
+                }
               </span>
             </motion.div>
 
@@ -437,9 +475,10 @@ export default function ProductDetailPage() {
                 Quantity
               </h3>
 
+              {/* Qty stepper — disabled when out of stock */}
               <div className="flex items-center gap-4">
-                {/* Qty stepper */}
-                <div className="flex items-center gap-0 bg-soft-sand rounded-xl overflow-hidden border border-soft-sand">
+                <div className={`flex items-center gap-0 bg-soft-sand rounded-xl overflow-hidden border border-soft-sand
+                                ${outOfStock ? 'opacity-40 pointer-events-none' : ''}`}>
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
                     className="w-11 h-11 flex items-center justify-center
@@ -462,41 +501,52 @@ export default function ProductDetailPage() {
                 </div>
 
                 {/* Total */}
-                <span className="font-sans text-muted-taupe text-sm">
-                  Total:{' '}
-                  <span className="font-bold text-espresso">
-                    ₹{(product.price * qty).toFixed(0)}
+                {!outOfStock && (
+                  <span className="font-sans text-muted-taupe text-sm">
+                    Total:{' '}
+                    <span className="font-bold text-espresso">
+                      ₹{(product.price * qty).toFixed(0)}
+                    </span>
                   </span>
-                </span>
+                )}
               </div>
 
               {/* Add to Cart button */}
-              <AnimatePresence mode="wait">
-                <motion.button
-                  key={added ? 'added' : 'add'}
-                  initial={{ scale: 0.97, opacity: 0.8 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.97, opacity: 0.8 }}
-                  transition={{ duration: 0.15 }}
-                  onClick={handleAddToCart}
-                  disabled={added}
-                  className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl
-                              font-sans font-bold text-base transition-all duration-200
-                              ${added
-                                ? 'bg-green-500 text-white cursor-default'
-                                : 'bg-flame-orange hover:bg-flame-dark text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5'
-                              }`}
-                >
-                  {added ? (
-                    <>✓ Added to Cart</>
-                  ) : (
-                    <>
-                      <ShoppingCart size={20} />
-                      Add to Cart · ₹{(product.price * qty).toFixed(0)}
-                    </>
-                  )}
-                </motion.button>
-              </AnimatePresence>
+              {outOfStock ? (
+                <div className="w-full flex items-center justify-center gap-3 py-4 rounded-xl
+                                bg-gray-100 border-2 border-gray-200 text-gray-400
+                                font-sans font-bold text-base cursor-not-allowed">
+                  <AlertTriangle size={18} />
+                  Currently Unavailable
+                </div>
+              ) : (
+                <AnimatePresence mode="wait">
+                  <motion.button
+                    key={added ? 'added' : 'add'}
+                    initial={{ scale: 0.97, opacity: 0.8 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.97, opacity: 0.8 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={handleAddToCart}
+                    disabled={added}
+                    className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl
+                                font-sans font-bold text-base transition-all duration-200
+                                ${added
+                                  ? 'bg-green-500 text-white cursor-default'
+                                  : 'bg-flame-orange hover:bg-flame-dark text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                                }`}
+                  >
+                    {added ? (
+                      <>✓ Added to Cart</>
+                    ) : (
+                      <>
+                        <ShoppingCart size={20} />
+                        Add to Cart · ₹{(product.price * qty).toFixed(0)}
+                      </>
+                    )}
+                  </motion.button>
+                </AnimatePresence>
+              )}
 
               {/* Back to menu link */}
               <button
@@ -628,56 +678,69 @@ export default function ProductDetailPage() {
                       bg-white border-t-2 border-espresso/10
                       px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <div className="flex items-center gap-3 max-w-lg mx-auto">
-          {/* Qty stepper */}
-          <div className="flex items-center bg-soft-sand rounded-xl overflow-hidden border border-soft-sand shrink-0">
-            <button
-              onClick={() => setQty((q) => Math.max(1, q - 1))}
-              className="w-9 h-9 flex items-center justify-center
-                         hover:bg-espresso/10 transition-colors text-espresso"
-              aria-label="Decrease quantity"
-            >
-              <Minus size={14} />
-            </button>
-            <span className="w-8 text-center font-display font-black text-base text-espresso">
-              {qty}
-            </span>
-            <button
-              onClick={() => setQty((q) => q + 1)}
-              className="w-9 h-9 flex items-center justify-center
-                         hover:bg-espresso/10 transition-colors text-espresso"
-              aria-label="Increase quantity"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
 
-          {/* Add to Cart button */}
-          <AnimatePresence mode="wait">
-            <motion.button
-              key={added ? 'added-mob' : 'add-mob'}
-              initial={{ scale: 0.97, opacity: 0.8 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.97, opacity: 0.8 }}
-              transition={{ duration: 0.15 }}
-              onClick={handleAddToCart}
-              disabled={added}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl
-                          font-sans font-bold text-sm transition-all duration-200
-                          ${added
-                            ? 'bg-green-500 text-white cursor-default'
-                            : 'bg-flame-orange hover:bg-flame-dark text-white shadow-md'
-                          }`}
-            >
-              {added ? (
-                <>✓ Added!</>
-              ) : (
-                <>
-                  <ShoppingCart size={17} />
-                  Add to Cart · ₹{(product.price * qty).toFixed(0)}
-                </>
-              )}
-            </motion.button>
-          </AnimatePresence>
+          {outOfStock ? (
+            /* Out of stock — full width message */
+            <div className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl
+                            bg-gray-100 border-2 border-gray-200 text-gray-400
+                            font-sans font-bold text-sm cursor-not-allowed">
+              <AlertTriangle size={16} />
+              Currently Unavailable
+            </div>
+          ) : (
+            <>
+              {/* Qty stepper */}
+              <div className="flex items-center bg-soft-sand rounded-xl overflow-hidden border border-soft-sand shrink-0">
+                <button
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  className="w-9 h-9 flex items-center justify-center
+                             hover:bg-espresso/10 transition-colors text-espresso"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="w-8 text-center font-display font-black text-base text-espresso">
+                  {qty}
+                </span>
+                <button
+                  onClick={() => setQty((q) => q + 1)}
+                  className="w-9 h-9 flex items-center justify-center
+                             hover:bg-espresso/10 transition-colors text-espresso"
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+
+              {/* Add to Cart button */}
+              <AnimatePresence mode="wait">
+                <motion.button
+                  key={added ? 'added-mob' : 'add-mob'}
+                  initial={{ scale: 0.97, opacity: 0.8 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.97, opacity: 0.8 }}
+                  transition={{ duration: 0.15 }}
+                  onClick={handleAddToCart}
+                  disabled={added}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl
+                              font-sans font-bold text-sm transition-all duration-200
+                              ${added
+                                ? 'bg-green-500 text-white cursor-default'
+                                : 'bg-flame-orange hover:bg-flame-dark text-white shadow-md'
+                              }`}
+                >
+                  {added ? (
+                    <>✓ Added!</>
+                  ) : (
+                    <>
+                      <ShoppingCart size={17} />
+                      Add to Cart · ₹{(product.price * qty).toFixed(0)}
+                    </>
+                  )}
+                </motion.button>
+              </AnimatePresence>
+            </>
+          )}
         </div>
       </div>
     </div>
