@@ -3,11 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Star, Flame, ShoppingCart, Plus, Minus,
-  Heart, Share2, ChevronRight, Zap, Leaf, Clock, ThumbsUp, AlertTriangle,
+  Heart, Share2, ChevronRight, Zap, Leaf, Clock, AlertTriangle,
 } from 'lucide-react'
 import { allProducts } from '@/data/products'
 import { supabase } from '@/lib/supabase'
-import { getReviewsForProduct, getRatingSummary } from '@/data/reviews'
 import { useCart } from '@/context/CartContext'
 import { useWishlist, setWishlistAuthTrigger } from '@/context/WishlistContext'
 import { useAuth } from '@/context/AuthContext'
@@ -42,15 +41,75 @@ function IngredientTag({ name }) {
 
 // ── Reviews Section ───────────────────────────────────────────────
 function ReviewsSection({ productId }) {
-  const reviews = getReviewsForProduct(productId)
-  const summary = getRatingSummary(reviews)
-  const [filter, setFilter] = useState('all')
-  const [helpfulIds, setHelpfulIds] = useState([])
+  const { user } = useAuth()
 
-  const filtered = filter === 'all' ? reviews : reviews.filter((r) => r.rating === Number(filter))
+  const [reviews, setReviews]     = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [filter, setFilter]       = useState('all')
 
-  const toggleHelpful = (id) => {
-    setHelpfulIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id])
+  // Write review form state
+  const [rating, setRating]       = useState(0)
+  const [hovered, setHovered]     = useState(0)
+  const [text, setText]           = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [submitSuccess, setSubmitSuccess] = useState(false)
+
+  // ── Fetch reviews from Supabase view ─────────────────────────
+  const fetchReviews = async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('reviews_with_profiles')
+      .select('*')
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false })
+    setReviews(data ?? [])
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchReviews() }, [productId])
+
+  // ── Derived summary ───────────────────────────────────────────
+  const total = reviews.length
+  const avg   = total > 0
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / total).toFixed(1)
+    : '0.0'
+  const dist  = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
+  reviews.forEach((r) => { dist[r.rating] = (dist[r.rating] || 0) + 1 })
+
+  const filtered = filter === 'all'
+    ? reviews
+    : reviews.filter((r) => r.rating === Number(filter))
+
+  // ── Submit review ─────────────────────────────────────────────
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!rating)      { setSubmitError('Please select a star rating.'); return }
+    if (!text.trim()) { setSubmitError('Please write something.'); return }
+
+    setSubmitError('')
+    setSubmitting(true)
+
+    const { error } = await supabase.from('reviews').insert({
+      product_id: productId,
+      user_id:    user.id,
+      rating,
+      text:       text.trim(),
+    })
+
+    setSubmitting(false)
+
+    if (error) {
+      setSubmitError('Failed to submit review. Please try again.')
+      return
+    }
+
+    // Reset form and refresh
+    setRating(0)
+    setText('')
+    setSubmitSuccess(true)
+    setTimeout(() => setSubmitSuccess(false), 3000)
+    fetchReviews()
   }
 
   return (
@@ -65,144 +124,243 @@ function ReviewsSection({ productId }) {
         Customer Reviews
       </h2>
 
-      {/* Rating summary */}
-      <div className="bg-white rounded-2xl border-2 border-espresso p-6 mb-8
-                      grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        {/* Big average */}
-        <div className="flex flex-col items-center gap-2">
-          <span className="font-display font-black text-7xl text-espresso leading-none">
-            {summary.avg}
-          </span>
-          <div className="flex items-center gap-1">
-            {[1,2,3,4,5].map((s) => (
-              <Star key={s} size={20}
-                className={s <= Math.round(Number(summary.avg))
-                  ? 'fill-mustard text-mustard'
-                  : 'text-espresso/20'} />
-            ))}
-          </div>
-          <span className="font-sans text-sm text-muted-taupe">
-            Based on {summary.total} reviews
-          </span>
-        </div>
+      {/* ── Write a Review ── */}
+      <div className="bg-white rounded-2xl border-2 border-espresso p-6 mb-8">
+        {user ? (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <p className="font-sans font-bold text-sm text-espresso uppercase tracking-wider">
+              Write a Review
+            </p>
 
-        {/* Distribution bars */}
-        <div className="flex flex-col gap-2">
-          {[5,4,3,2,1].map((star) => {
-            const count = summary.dist[star] || 0
-            const pct = summary.total > 0 ? (count / summary.total) * 100 : 0
-            return (
-              <button
-                key={star}
-                onClick={() => setFilter(filter === String(star) ? 'all' : String(star))}
-                className={`flex items-center gap-3 group w-full text-left
-                            ${filter === String(star) ? 'opacity-100' : 'opacity-80 hover:opacity-100'}`}
-              >
-                <span className="font-sans text-xs text-muted-taupe w-4 shrink-0">{star}</span>
-                <Star size={12} className="fill-mustard text-mustard shrink-0" />
-                <div className="flex-1 h-2 bg-soft-sand rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-mustard rounded-full"
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${pct}%` }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
+            {/* Star picker */}
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onMouseEnter={() => setHovered(s)}
+                  onMouseLeave={() => setHovered(0)}
+                  onClick={() => setRating(s)}
+                  aria-label={`Rate ${s} star${s > 1 ? 's' : ''}`}
+                >
+                  <Star
+                    size={28}
+                    className={`transition-colors duration-100
+                      ${s <= (hovered || rating)
+                        ? 'fill-mustard text-mustard'
+                        : 'text-espresso/20'}`}
                   />
-                </div>
-                <span className="font-sans text-xs text-muted-taupe w-4 shrink-0">{count}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
+                </button>
+              ))}
+              {rating > 0 && (
+                <span className="ml-2 font-sans text-sm text-muted-taupe">
+                  {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][rating]}
+                </span>
+              )}
+            </div>
 
-      {/* Filter tabs */}
-      <div className="flex items-center gap-2 flex-wrap mb-6">
-        {['all', '5', '4', '3'].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full font-sans font-semibold text-sm
-                        border-2 transition-all duration-150
-                        ${filter === f
-                          ? 'bg-espresso text-white border-espresso'
-                          : 'bg-white text-espresso border-espresso/30 hover:border-espresso'
-                        }`}
-          >
-            {f === 'all' ? 'All' : `${f} ★`}
-          </button>
-        ))}
-      </div>
+            {/* Text */}
+            <textarea
+              rows={3}
+              placeholder="Share your experience with this item..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-espresso/20
+                         font-sans text-sm text-espresso placeholder:text-muted-taupe
+                         focus:outline-none focus:border-flame-orange
+                         transition-colors duration-150 resize-none"
+            />
 
-      {/* Review cards */}
-      <div className="flex flex-col gap-4">
-        <AnimatePresence mode="wait">
-          {filtered.length === 0 ? (
-            <motion.p
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="font-sans text-sm text-muted-taupe py-8 text-center"
+            {submitError && (
+              <p className="font-sans text-xs text-red-500">{submitError}</p>
+            )}
+            {submitSuccess && (
+              <p className="font-sans text-xs text-green-600 font-semibold">
+                ✓ Review submitted!
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="self-start btn-primary text-sm gap-2 disabled:opacity-60"
             >
-              No reviews for this rating yet.
-            </motion.p>
-          ) : (
-            filtered.map((review) => (
-              <motion.div
-                key={review.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="bg-white rounded-2xl border-2 border-espresso/10 p-5 flex flex-col gap-3"
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={review.avatar}
-                      alt={review.name}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-espresso/10"
-                    />
-                    <div>
-                      <p className="font-sans font-bold text-sm text-espresso">{review.name}</p>
-                      <p className="font-sans text-xs text-muted-taupe">{review.date}</p>
-                    </div>
-                  </div>
-                  {/* Stars */}
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    {[1,2,3,4,5].map((s) => (
-                      <Star key={s} size={13}
-                        className={s <= review.rating ? 'fill-mustard text-mustard' : 'text-espresso/20'} />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Review text */}
-                <p className="font-sans text-sm text-muted-taupe leading-relaxed">
-                  "{review.text}"
-                </p>
-
-                {/* Helpful */}
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    onClick={() => toggleHelpful(review.id)}
-                    className={`flex items-center gap-1.5 font-sans text-xs font-semibold
-                                transition-colors duration-150
-                                ${helpfulIds.includes(review.id)
-                                  ? 'text-flame-orange'
-                                  : 'text-muted-taupe hover:text-espresso'
-                                }`}
-                  >
-                    <ThumbsUp size={13} className={helpfulIds.includes(review.id) ? 'fill-flame-orange' : ''} />
-                    Helpful ({review.helpful + (helpfulIds.includes(review.id) ? 1 : 0)})
-                  </button>
-                </div>
-              </motion.div>
-            ))
-          )}
-        </AnimatePresence>
+              {submitting
+                ? <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  </svg> Submitting...</>
+                : 'Submit Review'
+              }
+            </button>
+          </form>
+        ) : (
+          /* Not logged in */
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <div className="flex items-center gap-1">
+              {[1,2,3,4,5].map((s) => (
+                <Star key={s} size={22} className="text-espresso/15" />
+              ))}
+            </div>
+            <p className="font-sans text-sm text-muted-taupe">
+              Sign in to leave a review
+            </p>
+            <a
+              href="/login"
+              className="btn-primary text-sm"
+            >
+              Sign In
+            </a>
+          </div>
+        )}
       </div>
+
+      {/* ── Rating Summary ── */}
+      {total > 0 && (
+        <div className="bg-white rounded-2xl border-2 border-espresso p-6 mb-8
+                        grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <div className="flex flex-col items-center gap-2">
+            <span className="font-display font-black text-7xl text-espresso leading-none">
+              {avg}
+            </span>
+            <div className="flex items-center gap-1">
+              {[1,2,3,4,5].map((s) => (
+                <Star key={s} size={20}
+                  className={s <= Math.round(Number(avg))
+                    ? 'fill-mustard text-mustard'
+                    : 'text-espresso/20'} />
+              ))}
+            </div>
+            <span className="font-sans text-sm text-muted-taupe">
+              Based on {total} review{total !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {[5,4,3,2,1].map((star) => {
+              const count = dist[star] || 0
+              const pct = total > 0 ? (count / total) * 100 : 0
+              return (
+                <button
+                  key={star}
+                  onClick={() => setFilter(filter === String(star) ? 'all' : String(star))}
+                  className={`flex items-center gap-3 w-full text-left
+                    ${filter === String(star) ? 'opacity-100' : 'opacity-80 hover:opacity-100'}`}
+                >
+                  <span className="font-sans text-xs text-muted-taupe w-4 shrink-0">{star}</span>
+                  <Star size={12} className="fill-mustard text-mustard shrink-0" />
+                  <div className="flex-1 h-2 bg-soft-sand rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-mustard rounded-full"
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${pct}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <span className="font-sans text-xs text-muted-taupe w-4 shrink-0">{count}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Filter tabs ── */}
+      {total > 0 && (
+        <div className="flex items-center gap-2 flex-wrap mb-6">
+          {['all', '5', '4', '3', '2', '1'].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-1.5 rounded-full font-sans font-semibold text-sm
+                          border-2 transition-all duration-150
+                          ${filter === f
+                            ? 'bg-espresso text-white border-espresso'
+                            : 'bg-white text-espresso border-espresso/30 hover:border-espresso'
+                          }`}
+            >
+              {f === 'all' ? 'All' : `${f} ★`}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Review cards ── */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="w-6 h-6 rounded-full border-4 border-flame-orange border-t-transparent animate-spin" />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <AnimatePresence mode="wait">
+            {filtered.length === 0 ? (
+              <motion.p
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="font-sans text-sm text-muted-taupe py-8 text-center"
+              >
+                {total === 0
+                  ? 'No reviews yet. Be the first to review!'
+                  : 'No reviews for this rating.'}
+              </motion.p>
+            ) : (
+              filtered.map((review) => {
+                const name   = review.full_name || 'Anonymous'
+                const avatar = review.avatar_url
+                const date   = new Date(review.created_at).toLocaleDateString('en-IN', {
+                  day: 'numeric', month: 'short', year: 'numeric',
+                })
+                return (
+                  <motion.div
+                    key={review.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-2xl border-2 border-espresso/10 p-5 flex flex-col gap-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {avatar ? (
+                          <img
+                            src={avatar}
+                            alt={name}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-espresso/10"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-flame-orange/10 border-2
+                                          border-flame-orange/20 flex items-center justify-center
+                                          font-sans font-black text-sm text-flame-orange">
+                            {name[0].toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-sans font-bold text-sm text-espresso">{name}</p>
+                          <p className="font-sans text-xs text-muted-taupe">{date}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        {[1,2,3,4,5].map((s) => (
+                          <Star key={s} size={13}
+                            className={s <= review.rating
+                              ? 'fill-mustard text-mustard'
+                              : 'text-espresso/20'} />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="font-sans text-sm text-muted-taupe leading-relaxed">
+                      "{review.text}"
+                    </p>
+                  </motion.div>
+                )
+              })
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </motion.section>
   )
 }
