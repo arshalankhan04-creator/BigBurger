@@ -4,6 +4,11 @@ import { CartProvider } from '@/context/CartContext'
 import { WishlistProvider } from '@/context/WishlistContext'
 import { AuthProvider } from '@/context/AuthContext'
 import MainLayout from '@/layouts/MainLayout'
+import AdminLayout from '@/layouts/AdminLayout'
+import AdminGuard from '@/components/common/AdminGuard'
+import AdminDashboard from '@/pages/admin/AdminDashboard'
+import AdminProducts from '@/pages/admin/AdminProducts'
+import AdminOrders from '@/pages/admin/AdminOrders'
 import Home from '@/pages/Home'
 import MenuPage from '@/pages/MenuPage'
 import AboutPage from '@/pages/AboutPage'
@@ -67,11 +72,33 @@ export default function App() {
       <AuthProvider>
         <CartProvider>
           <WishlistProvider>
-            <BurgerReveal />
-            <CartDrawer />
-            <MainLayout>
-              <AnimatedRoutes />
-            </MainLayout>
+
+            {/* ── Admin routes — own layout, no navbar/cart ── */}
+            <Routes>
+              <Route path="/admin/*" element={
+                <AdminGuard>
+                  <AdminLayout>
+                    <Routes>
+                      <Route index          element={<AdminDashboard />} />
+                      <Route path="products" element={<AdminProducts />} />
+                      <Route path="orders"   element={<AdminOrders />} />
+                    </Routes>
+                  </AdminLayout>
+                </AdminGuard>
+              } />
+
+              {/* ── Public routes — main layout ── */}
+              <Route path="/*" element={
+                <>
+                  <BurgerReveal />
+                  <CartDrawer />
+                  <MainLayout>
+                    <AnimatedRoutes />
+                  </MainLayout>
+                </>
+              } />
+            </Routes>
+
           </WishlistProvider>
         </CartProvider>
       </AuthProvider>
