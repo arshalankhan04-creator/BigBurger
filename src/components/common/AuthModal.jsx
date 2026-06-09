@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { X, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
@@ -16,12 +17,16 @@ function GoogleIcon() {
 
 export default function AuthModal({ isOpen, onClose, reason = 'default' }) {
   const { signInWithGoogle, signInWithEmail } = useAuth()
+  const location = useLocation()
 
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
+
+  // Current page path to pass as ?from= so login can redirect back
+  const fromPath = encodeURIComponent(location.pathname + location.search)
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -199,11 +204,14 @@ export default function AuthModal({ isOpen, onClose, reason = 'default' }) {
                   <GoogleIcon /> Continue with Google
                 </button>
 
-                {/* Link to full login page */}
+                {/* Link to full login page — passes current path so login can redirect back */}
                 <p className="text-center font-sans text-xs text-muted-taupe">
                   New here?{' '}
-                  <a href="/login" onClick={onClose}
-                    className="text-flame-orange font-semibold hover:underline">
+                  <a
+                    href={`/login?from=${fromPath}`}
+                    onClick={onClose}
+                    className="text-flame-orange font-semibold hover:underline"
+                  >
                     Create an account
                   </a>
                 </p>

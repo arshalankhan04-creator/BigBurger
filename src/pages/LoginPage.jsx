@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -47,7 +47,12 @@ function Field({ icon: Icon, type, placeholder, value, onChange, error, rightEl 
 
 export default function LoginPage() {
   const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth()
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const location  = useLocation()
+
+  // Read ?from= param — this is where we'll redirect after login
+  const params    = new URLSearchParams(location.search)
+  const fromPath  = params.get('from') || '/'
 
   const [mode, setMode]           = useState('signin') // 'signin' | 'signup'
   const [name, setName]           = useState('')
@@ -59,10 +64,10 @@ export default function LoginPage() {
   const [submitting, setSubmitting]   = useState(false)
   const [signupDone, setSignupDone]   = useState(false)
 
-  // Redirect if already logged in
+  // Redirect if already logged in — go back to where they came from
   useEffect(() => {
-    if (!loading && user) navigate('/')
-  }, [user, loading, navigate])
+    if (!loading && user) navigate(fromPath, { replace: true })
+  }, [user, loading, navigate, fromPath])
 
   const validate = () => {
     const e = {}

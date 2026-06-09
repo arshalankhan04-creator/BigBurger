@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { NavLink, Link } from 'react-router-dom'
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, ShoppingBag, LogOut, User, Heart, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
-import AuthModal from '@/components/common/AuthModal'
 
 const navLinks = [
   { label: 'Home',     href: '/' },
@@ -151,9 +150,13 @@ function UserMenu({ user, signOut }) {
 export default function Navbar() {
   const [isOpen, setIsOpen]         = useState(false)
   const [scrolled, setScrolled]     = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
   const { totalItems, openCart }    = useCart()
   const { user, signOut }           = useAuth()
+  const location                    = useLocation()
+  const navigate                    = useNavigate()
+
+  // Build /login?from=currentPath
+  const loginHref = `/login?from=${encodeURIComponent(location.pathname + location.search)}`
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 12)
@@ -229,8 +232,8 @@ export default function Navbar() {
               {user ? (
                 <UserMenu user={user} signOut={signOut} />
               ) : (
-                <button
-                  onClick={() => setShowAuthModal(true)}
+                <Link
+                  to={loginHref}
                   className="flex items-center gap-2 font-sans font-semibold text-sm
                              bg-white/10 hover:bg-flame-orange text-white
                              px-4 py-2 rounded-sm border border-white/20 hover:border-flame-orange
@@ -238,7 +241,7 @@ export default function Navbar() {
                 >
                   <User size={15} />
                   Sign In
-                </button>
+                </Link>
               )}
             </div>
 
@@ -351,13 +354,14 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={() => { setIsOpen(false); setShowAuthModal(true) }}
+                  <Link
+                    to={loginHref}
+                    onClick={() => setIsOpen(false)}
                     className="w-full flex items-center justify-center gap-2 font-sans font-semibold
                                text-sm bg-white text-espresso py-3.5 rounded-sm"
                   >
                     <User size={15} /> Sign In with Google
-                  </button>
+                  </Link>
                   <Link
                     to="/menu"
                     onClick={() => setIsOpen(false)}
@@ -373,11 +377,6 @@ export default function Navbar() {
       </AnimatePresence>
 
       {/* ── Auth Modal ── */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        reason="default"
-      />
     </>
   )
 }
