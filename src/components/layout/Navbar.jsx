@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, ShoppingBag, LogOut, User, Heart, ClipboardList } from 'lucide-react'
+import { Menu, X, ShoppingBag, LogOut, User, Heart, ClipboardList, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
@@ -50,7 +50,7 @@ function CartBadge({ count }) {
 }
 
 // ── User Avatar + Dropdown ────────────────────────────────────────
-function UserMenu({ user, signOut }) {
+function UserMenu({ user, signOut, isAdmin }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -115,6 +115,7 @@ function UserMenu({ user, signOut }) {
 
             {/* Links */}
             {[
+              ...(isAdmin ? [{ to: '/admin', icon: LayoutDashboard, label: 'Admin Panel' }] : []),
               { to: '/orders',   icon: ClipboardList, label: 'My Orders'  },
               { to: '/wishlist', icon: Heart,         label: 'Wishlist'   },
             ].map(({ to, icon: Icon, label }) => (
@@ -151,7 +152,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen]         = useState(false)
   const [scrolled, setScrolled]     = useState(false)
   const { totalItems, openCart }    = useCart()
-  const { user, signOut }           = useAuth()
+  const { user, signOut, isAdmin }  = useAuth()
   const location                    = useLocation()
   const navigate                    = useNavigate()
 
@@ -230,7 +231,7 @@ export default function Navbar() {
 
               {/* Auth */}
               {user ? (
-                <UserMenu user={user} signOut={signOut} />
+                <UserMenu user={user} signOut={signOut} isAdmin={isAdmin} />
               ) : (
                 <Link
                   to={loginHref}
@@ -347,6 +348,12 @@ export default function Navbar() {
                   </div>
                   <Link to="/orders"   onClick={() => setIsOpen(false)} className="btn-outline text-white border-white/30 text-sm">My Orders</Link>
                   <Link to="/wishlist" onClick={() => setIsOpen(false)} className="btn-outline text-white border-white/30 text-sm">Wishlist</Link>
+                  {isAdmin && (
+                    <Link to="/admin" onClick={() => setIsOpen(false)}
+                      className="btn-outline text-flame-orange border-flame-orange/50 text-sm">
+                      Admin Panel
+                    </Link>
+                  )}
                   <button onClick={() => { signOut(); setIsOpen(false) }}
                     className="w-full py-3 font-sans font-semibold text-sm text-red-400 border border-red-400/30 rounded-sm">
                     Sign Out
