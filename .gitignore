@@ -11,12 +11,23 @@ build/
 # Vite cache
 .vite/
 
-# Environment variables
+# Environment variables — NEVER commit these
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+.env.staging
+
+# Secrets and credentials — NEVER commit these
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+secrets/
+credentials/
 
 # Editor
 .vscode/
@@ -29,12 +40,18 @@ build/
 
 # OS
 .DS_Store
+.DS_Store?
 Thumbs.db
+ehthumbs.db
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
-# Reference images
+# Reference images (design assets, not used in app)
 src/assets/images/Loginpageexample*.png
+
+# Local notes / private docs (keep outside project folder or add here)
+For me/
