@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Link } from 'react-router-dom'
-import { staggerContainer, staggerItem, fadeUp } from '@/animations/motion'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { staggerContainer, staggerItem } from '@/animations/motion'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { usePendingAction } from '@/context/PendingActionContext'
 import {
-  Package, ChevronRight, Clock, Bike, Store,
-  CheckCircle, ArrowRight, ShoppingBag, Trash2,
+  Package, ChevronRight, Bike, Store,
+  CheckCircle, ArrowRight, ShoppingBag, Trash2, LogIn,
 } from 'lucide-react'
 
 // ─── Status config ────────────────────────────────────────────────
@@ -124,13 +125,28 @@ function OrderCard({ order }) {
 
 // ─── Page ─────────────────────────────────────────────────────────
 export default function OrdersPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const { requireAuth } = usePendingAction()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Clean up ?resume= from URL if present (orders load automatically via useEffect)
   useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('resume') === 'orders') {
+      params.delete('resume')
+      const clean = location.pathname + (params.toString() ? `?${params.toString()}` : '')
+      navigate(clean, { replace: true })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    // Wait for auth to resolve before doing anything
+    if (authLoading) return
+
     if (user) {
-      // ── Load from Supabase ──────────────────────────────────────
       supabase
         .from('orders')
         .select('*, order_items(*)')
@@ -138,7 +154,6 @@ export default function OrdersPage() {
         .order('created_at', { ascending: false })
         .then(({ data }) => {
           if (data) {
-            // Normalize to shape OrderCard expects
             setOrders(data.map((o) => ({
               id:        o.id.slice(0, 8).toUpperCase(),
               date:      o.created_at,
@@ -157,25 +172,19 @@ export default function OrdersPage() {
           setLoading(false)
         })
     } else {
-      // ── Fallback: load from localStorage if not logged in ───────
-      try {
-        const saved = JSON.parse(localStorage.getItem('bigburger_orders') || '[]')
-        setOrders(saved)
-      } catch {
-        setOrders([])
-      }
       setLoading(false)
     }
-  }, [user])
+  }, [user, authLoading])
 
   const clearHistory = async () => {
     if (user) {
       await supabase.from('orders').delete().eq('user_id', user.id)
-    } else {
-      localStorage.removeItem('bigburger_orders')
     }
     setOrders([])
   }
+
+  // Still resolving auth — show spinner
+  const isLoading = authLoading || (!!user && loading)
 
   return (
     <div className="min-h-screen bg-warm-cream pt-16">
@@ -202,11 +211,12 @@ export default function OrdersPage() {
           >
             My Orders
           </motion.h1>
-          {orders.length > 0 && (
+          {user && orders.length > 0 && (
             <motion.p variants={staggerItem} className="font-sans text-white/60 text-sm">
               {orders.length} order{orders.length !== 1 ? 's' : ''} placed
             </motion.p>
-          )}        </motion.div>
+          )}
+        </motion.div>
       </div>
 
       {/* Wave */}
@@ -219,7 +229,9 @@ export default function OrdersPage() {
       {/* ── Content ── */}
       <div className="max-w-container mx-auto px-6 py-10">
         <AnimatePresence mode="wait">
-          {loading ? (
+
+          {/* Loading */}
+          {isLoading ? (
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="flex justify-center py-24">
               <svg className="animate-spin w-8 h-8 text-flame-orange" viewBox="0 0 24 24" fill="none">
@@ -227,7 +239,40 @@ export default function OrdersPage() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
               </svg>
             </motion.div>
+
+          ) : !user ? (
+            /* ── Guest: sign-in prompt ── */
+            <motion.div
+              key="guest"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center gap-6 py-20 text-center max-w-sm mx-auto"
+            >
+              <div className="w-24 h-24 rounded-full bg-soft-sand flex items-center justify-center">
+                <ShoppingBag size={40} className="text-espresso/20" strokeWidth={1.5} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <h2 className="font-display font-black text-display-md text-espresso">
+                  Sign in to see your orders
+                </h2>
+                <p className="font-sans text-sm text-muted-taupe leading-relaxed">
+                  Your full order history is saved to your account. Sign in to view it.
+                </p>
+              </div>
+              <button
+                onClick={() => requireAuth(() => {}, 'orders')}
+                className="btn-primary gap-2"
+              >
+                <LogIn size={16} />
+                Sign In
+              </button>
+              <Link to="/menu" className="font-sans text-sm text-muted-taupe hover:text-flame-orange transition-colors">
+                Browse Menu instead
+              </Link>
+            </motion.div>
+
           ) : orders.length === 0 ? (
+            /* ── Logged in, no orders ── */
             <motion.div
               key="empty"
               initial={{ opacity: 0, y: 12 }}
@@ -247,7 +292,9 @@ export default function OrdersPage() {
                 Browse Menu <ArrowRight size={16} />
               </Link>
             </motion.div>
+
           ) : (
+            /* ── Order list ── */
             <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                 <p className="font-sans font-semibold text-sm text-muted-taupe">
@@ -273,6 +320,7 @@ export default function OrdersPage() {
               </motion.div>
             </motion.div>
           )}
+
         </AnimatePresence>
       </div>
     </div>

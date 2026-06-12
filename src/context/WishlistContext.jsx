@@ -1,12 +1,9 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { usePendingAction } from '@/context/PendingActionContext'
 
 const WishlistContext = createContext(null)
-
-// Global setter so AuthModal trigger can be registered from anywhere
-let _requireAuth = null
-export function setWishlistAuthTrigger(fn) { _requireAuth = fn }
 
 function loadFromStorage() {
   try {
@@ -18,6 +15,7 @@ function loadFromStorage() {
 
 export function WishlistProvider({ children }) {
   const { user } = useAuth()
+  const { requireAuth } = usePendingAction()
   const [ids, setIds] = useState(loadFromStorage)
 
   // ── Sync from Supabase when user logs in ──────────────────────
@@ -41,9 +39,9 @@ export function WishlistProvider({ children }) {
   }, [ids, user])
 
   const toggle = useCallback(async (id) => {
-    // If not logged in, fire the auth modal instead
+    // If not logged in, open the auth modal; after sign-in, toggle will replay
     if (!user) {
-      if (_requireAuth) _requireAuth()
+      requireAuth(() => toggle(id), 'wishlist')
       return
     }
 

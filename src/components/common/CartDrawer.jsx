@@ -1,10 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Clock } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '@/context/CartContext'
-import { useAuth } from '@/context/AuthContext'
-import { useEffect, forwardRef, useState } from 'react'
-import AuthModal from '@/components/common/AuthModal'
+import { useEffect, forwardRef, useCallback } from 'react'
+import { useProtectedAction } from '@/hooks/useProtectedAction'
 import { isRestaurantOpen, getRestaurantStatus } from '@/lib/restaurantHours'
 import { getDeliveryFee } from '@/pages/CheckoutPage'
 
@@ -88,8 +87,14 @@ const CartItem = forwardRef(function CartItem({ item }, ref) {
 // ── Cart Drawer ───────────────────────────────────────────────────
 export default function CartDrawer() {
   const { items, isOpen, closeCart, subtotal, totalItems, clearCart } = useCart()
-  const { user } = useAuth()
-  const [showAuthModal, setShowAuthModal] = useState(false)
+  const navigate = useNavigate()
+
+  const goToCheckout = useCallback(() => {
+    closeCart()
+    navigate('/checkout')
+  }, [closeCart, navigate])
+
+  const protectedCheckout = useProtectedAction(goToCheckout, 'checkout')
 
   // Close on Escape
   useEffect(() => {
@@ -108,7 +113,6 @@ export default function CartDrawer() {
   const total = subtotal + deliveryFee
 
   return (
-    <>
     <AnimatePresence>
       {isOpen && (
         <>
@@ -253,24 +257,13 @@ export default function CartDrawer() {
 
                   {/* Checkout button — blocked when restaurant is closed */}
                   {isRestaurantOpen() ? (
-                    user ? (
-                      <Link
-                        to="/checkout"
-                        onClick={closeCart}
-                        className="btn-primary w-full justify-center gap-2 text-base"
-                      >
-                        Proceed to Checkout
-                        <ArrowRight size={16} />
-                      </Link>
-                    ) : (
-                      <button
-                        onClick={() => setShowAuthModal(true)}
-                        className="btn-primary w-full justify-center gap-2 text-base"
-                      >
-                        Proceed to Checkout
-                        <ArrowRight size={16} />
-                      </button>
-                    )
+                    <button
+                      onClick={protectedCheckout}
+                      className="btn-primary w-full justify-center gap-2 text-base"
+                    >
+                      Proceed to Checkout
+                      <ArrowRight size={16} />
+                    </button>
                   ) : (
                     <div className="flex flex-col items-center gap-2 bg-espresso/5
                                     border-2 border-espresso/20 rounded-xl px-4 py-3 text-center">
@@ -299,11 +292,5 @@ export default function CartDrawer() {
         </>
       )}
     </AnimatePresence>
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        reason="checkout"
-      />
-    </>
   )
 }

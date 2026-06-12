@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { CartProvider } from '@/context/CartContext'
 import { WishlistProvider } from '@/context/WishlistContext'
 import { AuthProvider } from '@/context/AuthContext'
+import { PendingActionProvider } from '@/context/PendingActionContext'
 import MainLayout from '@/layouts/MainLayout'
 import AdminLayout from '@/layouts/AdminLayout'
 import AdminGuard from '@/components/common/AdminGuard'
@@ -27,6 +28,7 @@ import LoginPage from '@/pages/LoginPage'
 import AuthCallbackPage from '@/pages/AuthCallbackPage'
 import BurgerReveal from '@/components/common/BurgerReveal'
 import CartDrawer from '@/components/common/CartDrawer'
+import AuthModal from '@/components/common/AuthModal'
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },
@@ -71,38 +73,43 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <CartProvider>
-          <WishlistProvider>
+        <PendingActionProvider>
+          <CartProvider>
+            <WishlistProvider>
 
-            {/* ── Admin routes — own layout, no navbar/cart ── */}
-            <Routes>
-              <Route path="/admin/*" element={
-                <AdminGuard>
-                  <AdminLayout>
-                    <Routes>
-                      <Route index            element={<AdminDashboard />} />
-                      <Route path="products"  element={<AdminProducts />} />
-                      <Route path="orders"    element={<AdminOrders />} />
-                      <Route path="messages"  element={<AdminMessages />} />
-                    </Routes>
-                  </AdminLayout>
-                </AdminGuard>
-              } />
+              {/* Single global auth modal — driven by PendingActionContext */}
+              <AuthModal />
 
-              {/* ── Public routes — main layout ── */}
-              <Route path="/*" element={
-                <>
-                  <BurgerReveal />
-                  <CartDrawer />
-                  <MainLayout>
-                    <AnimatedRoutes />
-                  </MainLayout>
-                </>
-              } />
-            </Routes>
+              {/* ── Admin routes — own layout, no navbar/cart ── */}
+              <Routes>
+                <Route path="/admin/*" element={
+                  <AdminGuard>
+                    <AdminLayout>
+                      <Routes>
+                        <Route index            element={<AdminDashboard />} />
+                        <Route path="products"  element={<AdminProducts />} />
+                        <Route path="orders"    element={<AdminOrders />} />
+                        <Route path="messages"  element={<AdminMessages />} />
+                      </Routes>
+                    </AdminLayout>
+                  </AdminGuard>
+                } />
 
-          </WishlistProvider>
-        </CartProvider>
+                {/* ── Public routes — main layout ── */}
+                <Route path="/*" element={
+                  <>
+                    <BurgerReveal />
+                    <CartDrawer />
+                    <MainLayout>
+                      <AnimatedRoutes />
+                    </MainLayout>
+                  </>
+                } />
+              </Routes>
+
+            </WishlistProvider>
+          </CartProvider>
+        </PendingActionProvider>
       </AuthProvider>
     </BrowserRouter>
   )

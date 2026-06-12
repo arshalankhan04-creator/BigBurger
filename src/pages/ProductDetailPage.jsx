@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Star, Flame, ShoppingCart, Plus, Minus,
@@ -8,9 +8,10 @@ import {
 import { allProducts } from '@/data/products'
 import { supabase } from '@/lib/supabase'
 import { useCart } from '@/context/CartContext'
-import { useWishlist, setWishlistAuthTrigger } from '@/context/WishlistContext'
+import { useWishlist } from '@/context/WishlistContext'
 import { useAuth } from '@/context/AuthContext'
-import AuthModal from '@/components/common/AuthModal'
+import { usePendingAction } from '@/context/PendingActionContext'
+import { useResumeAction } from '@/hooks/useResumeAction'
 import { staggerContainer, staggerItem, fadeUp, scaleIn } from '@/animations/motion'
 import useRecentlyViewed from '@/hooks/useRecentlyViewed'
 
@@ -42,6 +43,7 @@ function IngredientTag({ name }) {
 // ── Reviews Section ───────────────────────────────────────────────
 function ReviewsSection({ productId }) {
   const { user } = useAuth()
+  const { requireAuth } = usePendingAction()
 
   const [reviews, setReviews]     = useState([])
   const [loading, setLoading]     = useState(true)
@@ -82,8 +84,7 @@ function ReviewsSection({ productId }) {
     : reviews.filter((r) => r.rating === Number(filter))
 
   // ── Submit review ─────────────────────────────────────────────
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const doSubmit = useCallback(async () => {
     if (!rating)      { setSubmitError('Please select a star rating.'); return }
     if (!text.trim()) { setSubmitError('Please write something.'); return }
 
@@ -104,13 +105,29 @@ function ReviewsSection({ productId }) {
       return
     }
 
-    // Reset form and refresh
     setRating(0)
     setText('')
     setSubmitSuccess(true)
     setTimeout(() => setSubmitSuccess(false), 3000)
     fetchReviews()
+  }, [rating, text, productId, user])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    // Validate first — no point opening the auth modal if the form is blank
+    if (!rating)      { setSubmitError('Please select a star rating.'); return }
+    if (!text.trim()) { setSubmitError('Please write something.'); return }
+    setSubmitError('')
+
+    if (user) {
+      doSubmit()
+    } else {
+      requireAuth(doSubmit, 'review')
+    }
   }
+
+  // Resume after Google OAuth round-trip
+  useResumeAction('review', doSubmit)
 
   return (
     <motion.section
@@ -126,60 +143,60 @@ function ReviewsSection({ productId }) {
 
       {/* ── Write a Review ── */}
       <div className="bg-white rounded-2xl border-2 border-espresso p-6 mb-8">
-        {user ? (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <p className="font-sans font-bold text-sm text-espresso uppercase tracking-wider">
-              Write a Review
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <p className="font-sans font-bold text-sm text-espresso uppercase tracking-wider">
+            Write a Review
+          </p>
+
+          {/* Star picker */}
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onMouseEnter={() => setHovered(s)}
+                onMouseLeave={() => setHovered(0)}
+                onClick={() => setRating(s)}
+                aria-label={`Rate ${s} star${s > 1 ? 's' : ''}`}
+              >
+                <Star
+                  size={28}
+                  className={`transition-colors duration-100
+                    ${s <= (hovered || rating)
+                      ? 'fill-mustard text-mustard'
+                      : 'text-espresso/20'}`}
+                />
+              </button>
+            ))}
+            {rating > 0 && (
+              <span className="ml-2 font-sans text-sm text-muted-taupe">
+                {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][rating]}
+              </span>
+            )}
+          </div>
+
+          {/* Text */}
+          <textarea
+            rows={3}
+            placeholder="Share your experience with this item..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border-2 border-espresso/20
+                       font-sans text-sm text-espresso placeholder:text-muted-taupe
+                       focus:outline-none focus:border-flame-orange
+                       transition-colors duration-150 resize-none"
+          />
+
+          {submitError && (
+            <p className="font-sans text-xs text-red-500">{submitError}</p>
+          )}
+          {submitSuccess && (
+            <p className="font-sans text-xs text-green-600 font-semibold">
+              ✓ Review submitted!
             </p>
+          )}
 
-            {/* Star picker */}
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onMouseEnter={() => setHovered(s)}
-                  onMouseLeave={() => setHovered(0)}
-                  onClick={() => setRating(s)}
-                  aria-label={`Rate ${s} star${s > 1 ? 's' : ''}`}
-                >
-                  <Star
-                    size={28}
-                    className={`transition-colors duration-100
-                      ${s <= (hovered || rating)
-                        ? 'fill-mustard text-mustard'
-                        : 'text-espresso/20'}`}
-                  />
-                </button>
-              ))}
-              {rating > 0 && (
-                <span className="ml-2 font-sans text-sm text-muted-taupe">
-                  {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][rating]}
-                </span>
-              )}
-            </div>
-
-            {/* Text */}
-            <textarea
-              rows={3}
-              placeholder="Share your experience with this item..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border-2 border-espresso/20
-                         font-sans text-sm text-espresso placeholder:text-muted-taupe
-                         focus:outline-none focus:border-flame-orange
-                         transition-colors duration-150 resize-none"
-            />
-
-            {submitError && (
-              <p className="font-sans text-xs text-red-500">{submitError}</p>
-            )}
-            {submitSuccess && (
-              <p className="font-sans text-xs text-green-600 font-semibold">
-                ✓ Review submitted!
-              </p>
-            )}
-
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               type="submit"
               disabled={submitting}
@@ -193,26 +210,13 @@ function ReviewsSection({ productId }) {
                 : 'Submit Review'
               }
             </button>
-          </form>
-        ) : (
-          /* Not logged in */
-          <div className="flex flex-col items-center gap-3 py-4 text-center">
-            <div className="flex items-center gap-1">
-              {[1,2,3,4,5].map((s) => (
-                <Star key={s} size={22} className="text-espresso/15" />
-              ))}
-            </div>
-            <p className="font-sans text-sm text-muted-taupe">
-              Sign in to leave a review
-            </p>
-            <a
-              href="/login"
-              className="btn-primary text-sm"
-            >
-              Sign In
-            </a>
+            {!user && (
+              <p className="font-sans text-xs text-muted-taupe">
+                You'll be asked to sign in before submitting.
+              </p>
+            )}
           </div>
-        )}
+        </form>
       </div>
 
       {/* ── Rating Summary ── */}
@@ -368,16 +372,10 @@ function ReviewsSection({ productId }) {
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { addItem, openCart } = useCart()
   const { toggle: toggleWishlist, isWishlisted } = useWishlist()
   const { user } = useAuth()
-  const [showAuthModal, setShowAuthModal] = useState(false)
-
-  // Register auth trigger for wishlist context
-  useEffect(() => {
-    setWishlistAuthTrigger(() => setShowAuthModal(true))
-    return () => setWishlistAuthTrigger(null)
-  }, [])
 
   // ── Fetch product from Supabase (static data as instant fallback) ──
   const staticProduct = allProducts.find((p) => p.id === Number(id))
@@ -396,6 +394,11 @@ export default function ProductDetailPage() {
         setLoadingProduct(false)
       })
   }, [id])
+
+  // Resume wishlist toggle after Google OAuth round-trip
+  useResumeAction('wishlist', useCallback(() => {
+    toggleWishlist(Number(id))
+  }, [id, toggleWishlist]))
 
   const outOfStock = product?.stock === 0
 
@@ -823,13 +826,6 @@ export default function ProductDetailPage() {
       <div className="max-w-container mx-auto px-6 pb-8">
         <ReviewsSection productId={product.id} />
       </div>
-
-      {/* ── Auth Modal ── */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        reason="wishlist"
-      />
 
       {/* ── Mobile Sticky Add to Cart Bar (hidden on lg+) ── */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[980]

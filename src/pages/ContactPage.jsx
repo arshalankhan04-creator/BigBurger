@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle, Instagram, Facebook, Twitter } from 'lucide-react'
 import { staggerContainer, staggerItem, fadeUp, viewportOnce } from '@/animations/motion'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import AuthModal from '@/components/common/AuthModal'
+import { useProtectedAction } from '@/hooks/useProtectedAction'
+import { useResumeAction } from '@/hooks/useResumeAction'
 
 // ─── Contact info data ────────────────────────────────────────────
 const contactInfo = [
@@ -90,7 +91,6 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading]     = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [authModalOpen, setAuthModalOpen] = useState(false)
 
   // Persist form data to sessionStorage whenever it changes
   useEffect(() => {
@@ -113,15 +113,9 @@ export default function ContactPage() {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }))
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    // Auth gate — open login modal instead of submitting
-    if (!user) {
-      setAuthModalOpen(true)
-      return
-    }
-
+  // The actual submission logic — called directly when authed,
+  // or replayed automatically by PendingActionContext after sign-in
+  const doSubmit = useCallback(async () => {
     const e2 = validate()
     if (Object.keys(e2).length > 0) { setErrors(e2); return }
 
@@ -129,7 +123,6 @@ export default function ContactPage() {
     setSubmitError('')
 
     try {
-      // 1. Save to Supabase
       const { error: dbError } = await supabase
         .from('contact_messages')
         .insert({
@@ -142,13 +135,12 @@ export default function ContactPage() {
 
       if (dbError) throw new Error(dbError.message)
 
-      // 2. Send confirmation email to the user (best-effort — don't block on failure)
       try {
         await supabase.functions.invoke('send-contact-confirmation', {
           body: { name: form.name.trim(), email: form.email.trim(), subject: form.subject },
         })
       } catch {
-        // Email failure is non-fatal — submission is already saved
+        // Email failure is non-fatal
       }
 
       sessionStorage.removeItem(STORAGE_KEY)
@@ -158,7 +150,25 @@ export default function ContactPage() {
     } finally {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form])
+
+  // Wrap with auth gate — if user is not signed in, modal opens;
+  // after sign-in, doSubmit() runs automatically
+  const protectedSubmit = useProtectedAction(doSubmit, 'contact')
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    // Run form validation first — no point opening auth modal if form is invalid
+    const e2 = validate()
+    if (Object.keys(e2).length > 0) { setErrors(e2); return }
+
+    protectedSubmit()
   }
+
+  // Resume after Google OAuth round-trip
+  useResumeAction('contact', doSubmit)
 
   return (
     <div className="min-h-screen bg-warm-cream pt-16">
@@ -471,14 +481,6 @@ export default function ContactPage() {
 
         </div>
       </div>
-
-      {/* Auth gate modal */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        reason="contact"
-      />
-
     </div>
   )
 }
