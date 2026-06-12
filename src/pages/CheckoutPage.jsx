@@ -247,7 +247,7 @@ function DeliveryStep({ data, setData, errors, onNext, promo, setPromo, subtotal
 
       <motion.div variants={staggerItem} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="First Name *" error={errors.firstName}>
-          <input type="text" placeholder="Ahmed" value={data.firstName}
+          <input type="text" placeholder="Arsalaan" value={data.firstName}
             onChange={(e) => setData((d) => ({ ...d, firstName: e.target.value }))}
             className={`${inputClass} ${errors.firstName ? 'border-red-400' : ''}`} />
         </Field>
@@ -265,7 +265,7 @@ function DeliveryStep({ data, setData, errors, onNext, promo, setPromo, subtotal
             className={`${inputClass} ${errors.phone ? 'border-red-400' : ''}`} />
         </Field>
         <Field label="Email *" error={errors.email}>
-          <input type="email" placeholder="ahmed@example.com" value={data.email}
+          <input type="email" placeholder="khan@gmail.com" value={data.email}
             onChange={(e) => setData((d) => ({ ...d, email: e.target.value }))}
             className={`${inputClass} ${errors.email ? 'border-red-400' : ''}`} />
         </Field>
