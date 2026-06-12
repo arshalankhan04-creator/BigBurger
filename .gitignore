@@ -56,6 +56,9 @@ src/assets/images/Loginpageexample*.png
 # Local notes / private docs (keep outside project folder or add here)
 For me/
 
+# Kiro steering — personal preferences (keep local, do not push)
+.kiro/
+
 # Supabase — local functions (may contain secrets / env vars)
 supabase/functions/
 

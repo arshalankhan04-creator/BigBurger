@@ -64,12 +64,23 @@ function PageField({ icon: Icon, type, placeholder, value, onChange, error, righ
 function ModalField({ icon: Icon, type, placeholder, value, onChange, error, rightEl, autoComplete }) {
   return (
     <div className="flex flex-col gap-1">
-      <div className={`flex items-center gap-2 border-2 rounded-lg px-3 py-2.5
-                       transition-colors duration-150
-                       ${error
-                          ? 'border-red-400'
-                          : 'border-espresso/20 focus-within:border-flame-orange'}`}>
-        <Icon size={14} className="text-muted-taupe shrink-0" />
+      <div
+        className="flex items-center gap-2.5 px-4 py-3 rounded-xl transition-all duration-150"
+        style={{
+          background: '#FFFFFF',
+          border: error ? '2px solid #ef4444' : '1.5px solid #3D1B1130',
+          boxShadow: '0 1px 4px rgba(61,27,17,0.06)',
+        }}
+        onFocus={(e) => {
+          if (!error) e.currentTarget.style.border = '2px solid #E25222'
+          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(226,82,34,0.12)'
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.border = error ? '2px solid #ef4444' : '1.5px solid #3D1B1130'
+          e.currentTarget.style.boxShadow = '0 1px 4px rgba(61,27,17,0.06)'
+        }}
+      >
+        <Icon size={15} style={{ color: '#756A63', flexShrink: 0 }} />
         <input
           type={type}
           placeholder={placeholder}
@@ -289,7 +300,11 @@ export default function AuthForm({
             flex items-center justify-center gap-2
             ${isPage
               ? 'bg-yellow-400 hover:bg-yellow-300 text-gray-900'
-              : 'bg-espresso hover:bg-flame-orange text-white'}`}
+              : 'text-white'}`}
+          style={!isPage ? {
+            background: 'linear-gradient(135deg, #3D1B11 0%, #E25222 100%)',
+            boxShadow: '0 4px 16px rgba(226,82,34,0.35)',
+          } : undefined}
         >
           {submitting ? (
             <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
