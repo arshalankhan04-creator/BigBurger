@@ -55,3 +55,10 @@ src/assets/images/Loginpageexample*.png
 
 # Local notes / private docs (keep outside project folder or add here)
 For me/
+
+# Supabase — local functions (may contain secrets / env vars)
+supabase/functions/
+
+# Supabase — test seed data (contains fake emails inserted into auth.users)
+# Safe to keep locally for development; not needed publicly
+supabase/seed_test_data.sql
