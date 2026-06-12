@@ -413,7 +413,7 @@ function PaymentStep({ data, setData, onNext, onBack, orderType }) {
             </Field>
           </div>
           <Field label="Name on Card" error={null}>
-            <input type="text" placeholder="Ahmed Khan" className={inputClass} />
+            <input type="text" placeholder="Arsalaan Khan" className={inputClass} />
           </Field>
         </motion.div>
       )}

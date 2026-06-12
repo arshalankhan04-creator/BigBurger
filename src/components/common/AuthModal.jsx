@@ -51,6 +51,7 @@ export default function AuthModal({ isOpen, onClose, reason = 'default' }) {
   const messages = {
     wishlist: { emoji: '❤️', title: 'Save to Wishlist',  subtitle: 'Sign in to save your favourites.' },
     checkout: { emoji: '🛍️', title: 'Almost There!',     subtitle: 'Sign in to place your order.'       },
+    contact:  { emoji: '✉️', title: 'Sign In to Send',   subtitle: 'You need to be signed in to submit the contact form.' },
     default:  { emoji: '👋', title: 'Welcome Back',      subtitle: 'Sign in to your account.'           },
   }
   const msg = messages[reason] ?? messages.default

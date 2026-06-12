@@ -136,20 +136,6 @@ export default function FeaturedMenu() {
 
         </div>
 
-        {/* ── Wave divider into Testimonials ── */}
-        <div className="relative mt-16 md:mt-20 pointer-events-none" aria-hidden="true">
-          <svg
-            viewBox="0 0 1440 80"
-            preserveAspectRatio="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-full h-12 md:h-20"
-          >
-            <path
-              d="M0,60 C480,0 960,80 1440,20 L1440,80 L0,80 Z"
-              fill="#F3C641"
-            />
-          </svg>
-        </div>
       </section>
     </>
   )

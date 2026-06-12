@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle, Instagram, Facebook, Twitter } from 'lucide-react'
 import { staggerContainer, staggerItem, fadeUp, viewportOnce } from '@/animations/motion'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
+import AuthModal from '@/components/common/AuthModal'
 
 // ─── Contact info data ────────────────────────────────────────────
 const contactInfo = [
@@ -67,13 +70,32 @@ const inputClass = `w-full px-4 py-3 rounded-sm border-2 border-espresso bg-whit
   transition-colors duration-150`
 
 // ─── Page ─────────────────────────────────────────────────────────
+const STORAGE_KEY = 'contact_form_draft'
+
+const emptyForm = { name: '', email: '', phone: '', subject: '', message: '' }
+
+function loadDraft() {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY)
+    return saved ? { ...emptyForm, ...JSON.parse(saved) } : emptyForm
+  } catch {
+    return emptyForm
+  }
+}
+
 export default function ContactPage() {
-  const [form, setForm] = useState({
-    name: '', email: '', phone: '', subject: '', message: '',
-  })
-  const [errors, setErrors]     = useState({})
+  const { user } = useAuth()
+  const [form, setForm] = useState(loadDraft)
+  const [errors, setErrors]       = useState({})
   const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading]   = useState(false)
+  const [loading, setLoading]     = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+
+  // Persist form data to sessionStorage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(form))
+  }, [form])
 
   const validate = () => {
     const e = {}
@@ -91,16 +113,51 @@ export default function ContactPage() {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Auth gate — open login modal instead of submitting
+    if (!user) {
+      setAuthModalOpen(true)
+      return
+    }
+
     const e2 = validate()
     if (Object.keys(e2).length > 0) { setErrors(e2); return }
+
     setLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false)
+    setSubmitError('')
+
+    try {
+      // 1. Save to Supabase
+      const { error: dbError } = await supabase
+        .from('contact_messages')
+        .insert({
+          name:    form.name.trim(),
+          email:   form.email.trim(),
+          phone:   form.phone.trim() || null,
+          subject: form.subject,
+          message: form.message.trim(),
+        })
+
+      if (dbError) throw new Error(dbError.message)
+
+      // 2. Send confirmation email to the user (best-effort — don't block on failure)
+      try {
+        await supabase.functions.invoke('send-contact-confirmation', {
+          body: { name: form.name.trim(), email: form.email.trim(), subject: form.subject },
+        })
+      } catch {
+        // Email failure is non-fatal — submission is already saved
+      }
+
+      sessionStorage.removeItem(STORAGE_KEY)
       setSubmitted(true)
-    }, 1500)
+    } catch (err) {
+      setSubmitError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -174,7 +231,7 @@ export default function ContactPage() {
                     within 24 hours.
                   </p>
                   <button
-                    onClick={() => { setSubmitted(false); setForm({ name: '', email: '', phone: '', subject: '', message: '' }) }}
+                    onClick={() => { setSubmitted(false); setForm(emptyForm) }}
                     className="btn-outline text-sm mt-2"
                   >
                     Send Another Message
@@ -207,7 +264,7 @@ export default function ContactPage() {
                         name="name"
                         value={form.name}
                         onChange={handleChange}
-                        placeholder="Ahmed Khan"
+                        placeholder="Arsalaan Khan"
                         className={`${inputClass} ${errors.name ? 'border-red-400' : ''}`}
                         autoComplete="name"
                       />
@@ -218,7 +275,7 @@ export default function ContactPage() {
                         name="email"
                         value={form.email}
                         onChange={handleChange}
-                        placeholder="ahmed@example.com"
+                        placeholder="khan@gmail.com"
                         className={`${inputClass} ${errors.email ? 'border-red-400' : ''}`}
                         autoComplete="email"
                       />
@@ -266,6 +323,9 @@ export default function ContactPage() {
                   </Field>
 
                   {/* Submit */}
+                  {submitError && (
+                    <p className="font-sans text-sm text-red-500">{submitError}</p>
+                  )}
                   <button
                     type="submit"
                     disabled={loading}
@@ -411,6 +471,14 @@ export default function ContactPage() {
 
         </div>
       </div>
+
+      {/* Auth gate modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        reason="contact"
+      />
+
     </div>
   )
 }

@@ -65,7 +65,7 @@ export default function Categories() {
   return (
     <section
       id="categories"
-      className="bg-soft-sand py-16 md:py-20"
+      className="bg-soft-sand pt-16 md:pt-20 pb-20 md:pb-28 relative overflow-hidden"
       aria-label="Menu categories"
     >
       <div className="max-w-container mx-auto px-6">
@@ -106,12 +106,12 @@ export default function Categories() {
       </div>
 
       {/* ── Wave divider into Offers section ── */}
-      <div className="relative mt-16 md:mt-20 pointer-events-none" aria-hidden="true">
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none" aria-hidden="true">
         <svg
           viewBox="0 0 1440 80"
           preserveAspectRatio="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-12 md:h-20"
+          className="w-full h-12 md:h-20 block"
         >
           <path
             d="M0,20 C360,80 1080,0 1440,40 L1440,80 L0,80 Z"

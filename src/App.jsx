@@ -9,6 +9,7 @@ import AdminGuard from '@/components/common/AdminGuard'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminProducts from '@/pages/admin/AdminProducts'
 import AdminOrders from '@/pages/admin/AdminOrders'
+import AdminMessages from '@/pages/admin/AdminMessages'
 import Home from '@/pages/Home'
 import MenuPage from '@/pages/MenuPage'
 import AboutPage from '@/pages/AboutPage'
@@ -79,9 +80,10 @@ export default function App() {
                 <AdminGuard>
                   <AdminLayout>
                     <Routes>
-                      <Route index          element={<AdminDashboard />} />
-                      <Route path="products" element={<AdminProducts />} />
-                      <Route path="orders"   element={<AdminOrders />} />
+                      <Route index            element={<AdminDashboard />} />
+                      <Route path="products"  element={<AdminProducts />} />
+                      <Route path="orders"    element={<AdminOrders />} />
+                      <Route path="messages"  element={<AdminMessages />} />
                     </Routes>
                   </AdminLayout>
                 </AdminGuard>

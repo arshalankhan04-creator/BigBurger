@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { staggerContainer, staggerItem, viewportOnce } from '@/animations/motion'
 
-// ── Extended testimonials data ────────────────────────────────────
+// ── Testimonials data ─────────────────────────────────────────
 const TESTIMONIALS = [
   {
     id: 1,
@@ -78,17 +78,22 @@ const TESTIMONIALS = [
   },
 ]
 
-// Duplicate for seamless loop
 const DOUBLED = [...TESTIMONIALS, ...TESTIMONIALS]
 
-// ── Star rating ───────────────────────────────────────────────────
+// ── Star rating ───────────────────────────────────────────────
 function Stars({ count = 5 }) {
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-0.5" aria-label={`${count} out of 5 stars`}>
       {Array.from({ length: 5 }).map((_, i) => (
-        <svg key={i} width="14" height="14" viewBox="0 0 16 16"
-          fill={i < count ? '#E25222' : 'rgba(61,27,17,0.2)'}
-          xmlns="http://www.w3.org/2000/svg">
+        <svg
+          key={i}
+          width="13"
+          height="13"
+          viewBox="0 0 16 16"
+          fill={i < count ? '#F3C641' : 'rgba(61,27,17,0.15)'}
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
           <path d="M8 1l1.85 3.75L14 5.5l-3 2.92.71 4.13L8 10.4l-3.71 2.15L5 8.42 2 5.5l4.15-.75L8 1z" />
         </svg>
       ))}
@@ -96,74 +101,64 @@ function Stars({ count = 5 }) {
   )
 }
 
-// ── Single card ───────────────────────────────────────────────────
+// ── Single card ───────────────────────────────────────────────
 function TestimonialCard({ item }) {
   return (
     <div
-      className="relative flex-shrink-0 w-[320px] md:w-[360px] rounded-2xl p-6 flex flex-col gap-4 mx-3 group"
+      className="relative flex-shrink-0 w-[300px] md:w-[340px] rounded-2xl p-5 flex flex-col gap-3 mx-3 group"
       style={{
-        background: 'rgba(255,255,255,0.85)',
-        backdropFilter: 'blur(12px)',
-        border: '1.5px solid rgba(61,27,17,0.08)',
-        boxShadow: '0 4px 24px rgba(61,27,17,0.06)',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+        background: '#FFFFFF',
+        border: '1.5px solid rgba(61,27,17,0.10)',
+        boxShadow: '0 2px 16px rgba(61,27,17,0.07)',
       }}
     >
-      {/* Large decorative quote */}
+      {/* Decorative quote mark */}
       <div
-        className="absolute top-4 right-5 font-display font-black text-7xl leading-none select-none pointer-events-none"
-        style={{ color: 'rgba(226,82,34,0.08)' }}
+        className="absolute top-3 right-4 font-display font-black text-6xl leading-none select-none pointer-events-none"
+        style={{ color: 'rgba(226,82,34,0.07)' }}
         aria-hidden="true"
       >
         "
       </div>
 
-      {/* Tag */}
-      <span
-        className="self-start font-sans font-bold text-xs px-2.5 py-1 rounded-full"
-        style={{ background: 'rgba(226,82,34,0.1)', color: '#E25222' }}
-      >
-        {item.tag}
-      </span>
-
-      {/* Stars */}
-      <Stars count={item.rating} />
-
-      {/* Review text */}
-      <p className="font-sans text-sm leading-relaxed flex-1" style={{ color: '#3D1B11' }}>
-        "{item.review}"
-      </p>
-
-      {/* Author */}
-      <div className="flex items-center gap-3 pt-2 border-t" style={{ borderColor: 'rgba(61,27,17,0.08)' }}>
+      {/* Top row: avatar + name + stars */}
+      <div className="flex items-center gap-3">
         <img
           src={item.avatar}
           alt={item.name}
           className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-          style={{ border: '2px solid rgba(226,82,34,0.3)' }}
+          style={{ border: '2px solid #F3C641' }}
           loading="lazy"
         />
-        <div>
-          <p className="font-sans font-bold text-sm" style={{ color: '#3D1B11' }}>{item.name}</p>
-          <p className="font-sans text-xs" style={{ color: '#756A63' }}>{item.role}</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-sans font-bold text-sm leading-tight truncate" style={{ color: '#3D1B11' }}>
+            {item.name}
+          </p>
+          <p className="font-sans text-xs leading-tight" style={{ color: '#756A63' }}>
+            {item.role}
+          </p>
         </div>
-        {/* Verified badge */}
-        <div className="ml-auto flex-shrink-0">
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
-            style={{ background: 'rgba(34,197,94,0.15)', color: '#16a34a' }}
-            title="Verified customer"
-          >
-            ✓
-          </div>
-        </div>
+        <Stars count={item.rating} />
       </div>
+
+      {/* Review text */}
+      <p className="font-sans text-sm leading-relaxed flex-1" style={{ color: '#3D1B11', opacity: 0.82 }}>
+        "{item.review}"
+      </p>
+
+      {/* Tag */}
+      <span
+        className="self-start font-sans font-semibold text-xs px-2.5 py-1 rounded-full"
+        style={{ background: 'rgba(243,198,65,0.18)', color: '#3D1B11' }}
+      >
+        {item.tag}
+      </span>
     </div>
   )
 }
 
-// ── Marquee row ───────────────────────────────────────────────────
-function MarqueeRow({ items, direction = 'left', speed = 40 }) {
+// ── Marquee row ───────────────────────────────────────────────
+function MarqueeRow({ items, direction = 'left', speed = 28 }) {
   const [paused, setPaused] = useState(false)
   const duration = items.length * speed
 
@@ -189,127 +184,101 @@ function MarqueeRow({ items, direction = 'left', speed = 40 }) {
   )
 }
 
-// ── Stats strip ───────────────────────────────────────────────────
-function StatsStrip() {
-  const stats = [
-    { value: '10K+', label: 'Happy Customers', icon: '😊' },
-    { value: '4.9★', label: 'Average Rating', icon: '⭐' },
-    { value: '98%', label: 'Would Recommend', icon: '👍' },
-    { value: '5K+', label: 'Reviews Written', icon: '✍️' },
-  ]
-
-  return (
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      whileInView="visible"
-      viewport={viewportOnce}
-      className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14"
-    >
-      {stats.map((stat) => (
-        <motion.div
-          key={stat.label}
-          variants={staggerItem}
-          className="flex flex-col items-center gap-1 py-5 rounded-2xl"
-          style={{
-            background: 'rgba(255,255,255,0.5)',
-            backdropFilter: 'blur(8px)',
-            border: '1.5px solid rgba(61,27,17,0.08)',
-          }}
-        >
-          <span className="text-2xl">{stat.icon}</span>
-          <span className="font-display font-black text-2xl" style={{ color: '#E25222' }}>
-            {stat.value}
-          </span>
-          <span className="font-sans text-xs text-center" style={{ color: '#756A63' }}>
-            {stat.label}
-          </span>
-        </motion.div>
-      ))}
-    </motion.div>
-  )
-}
-
-// ── Main section ──────────────────────────────────────────────────
+// ── Main section ──────────────────────────────────────────────
 export default function Testimonials() {
   return (
     <section
       id="reviews"
-      className="py-16 md:py-24 overflow-hidden relative"
-      style={{ background: 'linear-gradient(135deg, #FBF7F2 0%, #F3EDE2 50%, #FBF7F2 100%)' }}
+      className="overflow-hidden relative pb-20 md:pb-28"
+      style={{ background: '#3D1B11' }}
       aria-label="Customer reviews"
     >
-      {/* Decorative background blobs */}
-      <div
-        className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none"
-        style={{ background: 'rgba(243,198,65,0.15)' }}
-        aria-hidden="true"
-      />
-      <div
-        className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full blur-3xl pointer-events-none"
-        style={{ background: 'rgba(226,82,34,0.08)' }}
-        aria-hidden="true"
-      />
-
       {/* Marquee CSS */}
       <style>{`
         @keyframes marquee-left {
-          0% { transform: translateX(0); }
+          0%   { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
         @keyframes marquee-right {
-          0% { transform: translateX(-50%); }
+          0%   { transform: translateX(-50%); }
           100% { transform: translateX(0); }
         }
       `}</style>
 
-      <div className="max-w-container mx-auto px-6 relative z-10">
-        {/* Header */}
+      {/* Subtle texture overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(226,82,34,0.12) 0%, transparent 60%), radial-gradient(circle at 80% 50%, rgba(243,198,65,0.08) 0%, transparent 60%)',
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Section header */}
+      <div className="max-w-container mx-auto px-6 pt-16 pb-10 relative z-10">
         <motion.div
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
           viewport={viewportOnce}
-          className="section-header mb-12"
+          className="flex flex-col items-center text-center gap-3"
         >
-          <motion.p variants={staggerItem} className="eyebrow">
+          <motion.p
+            variants={staggerItem}
+            className="font-sans font-bold text-xs uppercase tracking-wider"
+            style={{ color: '#F3C641' }}
+          >
             Real People, Real Reviews
           </motion.p>
           <motion.h2
             variants={staggerItem}
-            className="font-display font-black text-espresso text-display-lg leading-tight"
+            className="font-display font-black text-display-lg leading-tight"
+            style={{ color: '#FBF7F2' }}
           >
             What Our Customers Say
           </motion.h2>
-          <motion.p
+          {/* Decorative mustard rule */}
+          <motion.div
             variants={staggerItem}
-            className="font-sans text-base text-muted-taupe max-w-md leading-relaxed mt-2"
-          >
-            Over 10,000 happy customers and counting. Here's what they have to say.
-          </motion.p>
+            className="w-12 h-1 rounded-full mt-1"
+            style={{ background: '#F3C641' }}
+            aria-hidden="true"
+          />
         </motion.div>
-
-        {/* Stats */}
-        <StatsStrip />
       </div>
 
-      {/* Marquee rows — full width, no container constraint */}
-      <div className="flex flex-col gap-5">
-        <MarqueeRow items={DOUBLED} direction="left" speed={35} />
-        <MarqueeRow items={[...DOUBLED].reverse()} direction="right" speed={40} />
+      {/* Marquee rows */}
+      <div className="flex flex-col gap-4 pb-16 relative z-10">
+        <MarqueeRow items={DOUBLED} direction="left" speed={20} />
+        <MarqueeRow items={[...DOUBLED].reverse()} direction="right" speed={20} />
       </div>
 
-      {/* Fade edges */}
+      {/* Left/right fade masks using the dark espresso colour */}
       <div
-        className="absolute inset-y-0 left-0 w-24 pointer-events-none z-10"
-        style={{ background: 'linear-gradient(to right, #FBF7F2, transparent)' }}
+        className="absolute inset-y-0 left-0 w-20 pointer-events-none z-20"
+        style={{ background: 'linear-gradient(to right, #3D1B11, transparent)' }}
         aria-hidden="true"
       />
       <div
-        className="absolute inset-y-0 right-0 w-24 pointer-events-none z-10"
-        style={{ background: 'linear-gradient(to left, #FBF7F2, transparent)' }}
+        className="absolute inset-y-0 right-0 w-20 pointer-events-none z-20"
+        style={{ background: 'linear-gradient(to left, #3D1B11, transparent)' }}
         aria-hidden="true"
       />
+
+      {/* ── Wave divider into About section ── */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-30" aria-hidden="true">
+        <svg
+          viewBox="0 0 1440 80"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-full h-12 md:h-20 block"
+        >
+          <path
+            d="M0,40 C360,0 1080,80 1440,20 L1440,80 L0,80 Z"
+            fill="#FBF7F2"
+          />
+        </svg>
+      </div>
     </section>
   )
 }

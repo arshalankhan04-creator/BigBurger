@@ -84,22 +84,38 @@ export default function Offers() {
           <motion.div
             variants={staggerItem}
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className="relative bg-[#2A1009] rounded-xl border-2 border-white/10
+            className="relative rounded-xl border-2 border-white/10
                        overflow-hidden flex flex-col justify-between
                        min-h-[220px] p-7"
           >
+            {/* Full-bleed background image */}
+            <img
+              src={offers[0].image}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+              aria-hidden="true"
+            />
+
+            {/* Dark semi-transparent overlay for legibility */}
+            <div
+              className="absolute inset-0"
+              style={{ background: 'linear-gradient(135deg, rgba(26,8,2,0.82) 0%, rgba(26,8,2,0.55) 60%, rgba(26,8,2,0.35) 100%)' }}
+              aria-hidden="true"
+            />
+
             {/* Badge */}
             <span
               className="absolute top-5 right-5 bg-flame-orange text-white
                          font-sans font-black text-sm px-3 py-1 rounded-sm
-                         tracking-wide"
+                         tracking-wide z-10"
               aria-label="50% off discount"
             >
               50% OFF
             </span>
 
             {/* Text content */}
-            <div className="flex flex-col gap-3 max-w-[60%]">
+            <div className="relative z-10 flex flex-col gap-3 max-w-[60%]">
               <p className="eyebrow text-mustard">{offers[0].eyebrow}</p>
               <h3
                 className="font-display font-black text-white
@@ -114,31 +130,34 @@ export default function Offers() {
                 {offers[0].cta}
               </Link>
             </div>
-
-            {/* Food image — absolute right */}
-            <div
-              className="absolute right-0 bottom-0 w-40 md:w-48 pointer-events-none"
-              aria-hidden="true"
-            >
-              <img
-                src={offers[0].image}
-                alt=""
-                className="w-full object-contain drop-shadow-2xl"
-                loading="lazy"
-              />
-            </div>
           </motion.div>
 
           {/* ── Offer Card 2 — Free Drinks ── */}
           <motion.div
             variants={staggerItem}
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className="relative bg-[#2A1009] rounded-xl border-2 border-white/10
+            className="relative rounded-xl border-2 border-white/10
                        overflow-hidden flex flex-col justify-between
                        min-h-[220px] p-7"
           >
+            {/* Full-bleed background image */}
+            <img
+              src={offers[1].image}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+              aria-hidden="true"
+            />
+
+            {/* Dark semi-transparent overlay for legibility */}
+            <div
+              className="absolute inset-0"
+              style={{ background: 'linear-gradient(135deg, rgba(26,8,2,0.82) 0%, rgba(26,8,2,0.55) 60%, rgba(26,8,2,0.35) 100%)' }}
+              aria-hidden="true"
+            />
+
             {/* Text content */}
-            <div className="flex flex-col gap-3 max-w-[60%]">
+            <div className="relative z-10 flex flex-col gap-3 max-w-[60%]">
               <p className="eyebrow text-mustard">{offers[1].eyebrow}</p>
               <h3
                 className="font-display font-black text-white
@@ -152,19 +171,6 @@ export default function Offers() {
               <div className="mt-2">
                 <AppStoreBadges />
               </div>
-            </div>
-
-            {/* Food image — absolute right */}
-            <div
-              className="absolute right-0 bottom-0 w-40 md:w-48 pointer-events-none"
-              aria-hidden="true"
-            >
-              <img
-                src={offers[1].image}
-                alt=""
-                className="w-full object-contain drop-shadow-2xl"
-                loading="lazy"
-              />
             </div>
           </motion.div>
 

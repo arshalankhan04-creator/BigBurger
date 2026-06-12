@@ -3,14 +3,15 @@ import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Package, ShoppingBag,
-  LogOut, Menu, X, ChevronRight,
+  LogOut, Menu, X, ChevronRight, MessageSquare,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
 const navItems = [
-  { label: 'Dashboard', href: '/admin',          icon: LayoutDashboard, end: true },
-  { label: 'Products',  href: '/admin/products', icon: Package },
-  { label: 'Orders',    href: '/admin/orders',   icon: ShoppingBag },
+  { label: 'Dashboard', href: '/admin',           icon: LayoutDashboard, end: true },
+  { label: 'Products',  href: '/admin/products',  icon: Package },
+  { label: 'Orders',    href: '/admin/orders',    icon: ShoppingBag },
+  { label: 'Messages',  href: '/admin/messages',  icon: MessageSquare },
 ]
 
 function SidebarContent({ onClose }) {

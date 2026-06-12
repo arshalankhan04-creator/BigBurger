@@ -17,7 +17,7 @@ const timeline = [
     year: '1980',
     title: 'The Beginning',
     description:
-      'Big Burger was born in a small kitchen in Ahmedabad with one simple belief — real flame makes real flavor. Our founder Ahmed Khan opened the first location with just 5 items on the menu.',
+      'Big Burger was born in a small kitchen in Ahmedabad with one simple belief — real flame makes real flavor. Our founder Arsalaan Khan opened the first location with just 5 items on the menu.',
   },
   {
     year: '1995',
@@ -47,7 +47,7 @@ const timeline = [
 
 const team = [
   {
-    name: 'Ahmed Khan',
+    name: 'Arsalaan Khan',
     role: 'Founder & Head Chef',
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&auto=format',
     bio: 'Started Big Burger at 28 with a cast iron grill and a dream.',
