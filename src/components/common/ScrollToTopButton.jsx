@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUp } from 'lucide-react'
 
-export default function ScrollToTopButton() {
+export default function ScrollToTopButton({ hidden = false }) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export default function ScrollToTopButton() {
 
   return (
     <AnimatePresence>
-      {visible && (
+      {visible && !hidden && (
         <motion.button
           key="scroll-top"
           initial={{ opacity: 0, scale: 0.5, y: 20 }}

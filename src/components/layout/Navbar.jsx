@@ -148,8 +148,9 @@ function UserMenu({ user, signOut, isAdmin }) {
   )
 }
 
-export default function Navbar() {
-  const [isOpen, setIsOpen]         = useState(false)
+export default function Navbar({ mobileMenuOpen, setMobileMenuOpen }) {
+  const isOpen = mobileMenuOpen
+  const setIsOpen = setMobileMenuOpen
   const [scrolled, setScrolled]     = useState(false)
   const { totalItems, openCart }    = useCart()
   const { user, signOut, isAdmin }  = useAuth()
@@ -246,19 +247,48 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* ── Mobile: cart + hamburger ── */}
+            {/* ── Mobile: Sign In / Avatar + hamburger ── */}
             <div className="md:hidden flex items-center gap-1">
-              <button
-                onClick={openCart}
-                className="relative flex items-center justify-center w-10 h-10
-                           text-white hover:text-flame-orange transition-colors duration-150
-                           focus-visible:outline-none rounded-sm"
-                aria-label={`Open cart, ${totalItems} items`}
-              >
-                <ShoppingBag size={20} strokeWidth={2} />
-                <CartBadge count={totalItems} />
-              </button>
 
+              {/* Sign In (guest) or Avatar (logged in) */}
+              {user ? (
+                <button
+                  onClick={() => setIsOpen((prev) => !prev)}
+                  className="flex items-center justify-center focus-visible:outline-none"
+                  aria-label="Open menu"
+                >
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/30">
+                    {user.user_metadata?.avatar_url ? (
+                      <img
+                        src={user.user_metadata.avatar_url}
+                        alt="avatar"
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-flame-orange flex items-center justify-center
+                                      font-sans font-black text-xs text-white">
+                        {user.user_metadata?.full_name
+                          ? user.user_metadata.full_name[0].toUpperCase()
+                          : user.email?.[0].toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ) : (
+                <Link
+                  to={loginHref}
+                  className="flex items-center gap-1.5 font-sans font-semibold text-xs
+                             bg-white/10 hover:bg-flame-orange text-white
+                             px-3 py-1.5 rounded-sm border border-white/20 hover:border-flame-orange
+                             transition-all duration-150"
+                >
+                  <User size={13} />
+                  Sign In
+                </Link>
+              )}
+
+              {/* Hamburger */}
               <button
                 className="flex items-center justify-center w-10 h-10
                            text-white hover:text-flame-orange transition-colors duration-150
@@ -289,7 +319,7 @@ export default function Navbar() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 z-40 bg-espresso flex flex-col pt-20 px-8 pb-10"
+            className="fixed inset-0 z-40 bg-espresso flex flex-col pt-20 px-8 pb-24 overflow-y-auto"
           >
             <nav className="flex flex-col gap-2 flex-1">
               {navLinks.map((link, i) => (
@@ -320,7 +350,7 @@ export default function Navbar() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0, transition: { delay: 0.35, duration: 0.3 } }}
-              className="flex flex-col gap-3"
+              className="flex flex-col gap-3 mt-6"
             >
               {user ? (
                 <>
@@ -359,25 +389,7 @@ export default function Navbar() {
                     Sign Out
                   </button>
                 </>
-              ) : (
-                <>
-                  <Link
-                    to={loginHref}
-                    onClick={() => setIsOpen(false)}
-                    className="w-full flex items-center justify-center gap-2 font-sans font-semibold
-                               text-sm bg-white text-espresso py-3.5 rounded-sm"
-                  >
-                    <User size={15} /> Sign In with Google
-                  </Link>
-                  <Link
-                    to="/menu"
-                    onClick={() => setIsOpen(false)}
-                    className="btn-primary w-full justify-center text-base"
-                  >
-                    Order Now
-                  </Link>
-                </>
-              )}
+              ) : null}
             </motion.div>
           </motion.div>
         )}
