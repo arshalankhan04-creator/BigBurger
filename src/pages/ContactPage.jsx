@@ -30,7 +30,7 @@ const contactInfo = [
   {
     icon: Clock,
     label: 'Hours',
-    value: 'Mon–Sun: 10:00 AM – 12:00 AM',
+    value: 'Mon–Sun: 10:00 AM – 11:00 PM',
     href: null,
   },
 ]

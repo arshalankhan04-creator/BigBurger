@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { ShoppingBag, ChevronRight, CheckCircle, Truck, Store, CreditCard, Banknote, Tag, X } from 'lucide-react'
@@ -536,6 +536,27 @@ function SuccessScreen({ name, orderId, orderType }) {
   )
 }
 
+// ─── Delivery draft persistence ───────────────────────────────────
+const DELIVERY_DRAFT_KEY = 'bb_checkout_delivery'
+
+const emptyDelivery = {
+  orderType: 'delivery', firstName: '', lastName: '',
+  phone: '', email: '', address: '', city: 'Ahmedabad', pincode: '', notes: '',
+}
+
+function loadDeliveryDraft() {
+  try {
+    const saved = sessionStorage.getItem(DELIVERY_DRAFT_KEY)
+    return saved ? { ...emptyDelivery, ...JSON.parse(saved) } : emptyDelivery
+  } catch {
+    return emptyDelivery
+  }
+}
+
+function clearDeliveryDraft() {
+  try { sessionStorage.removeItem(DELIVERY_DRAFT_KEY) } catch {}
+}
+
 // ─── Main page ────────────────────────────────────────────────────
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart()
@@ -544,14 +565,18 @@ export default function CheckoutPage() {
   const [loading, setLoading]         = useState(false)
   const [success, setSuccess]         = useState(false)
   const [orderId, setOrderId]         = useState('')
-  const [delivery, setDelivery]       = useState({
-    orderType: 'delivery', firstName: '', lastName: '',
-    phone: '', email: '', address: '', city: 'Ahmedabad', pincode: '', notes: '',
-  })
+  const [delivery, setDelivery]       = useState(loadDeliveryDraft)
   const [payment, setPayment]         = useState({ paymentMethod: 'cash' })
   const [errors, setErrors]           = useState({})
   const [promo, setPromo]             = useState(null)
   const [orderError, setOrderError]   = useState('')
+
+  // Persist delivery form to sessionStorage on every change
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(DELIVERY_DRAFT_KEY, JSON.stringify(delivery))
+    } catch {}
+  }, [delivery])
 
   // Redirect to menu if cart is empty
   if (items.length === 0 && !success) {
@@ -698,6 +723,7 @@ export default function CheckoutPage() {
       }
 
       clearCart()
+      clearDeliveryDraft()
       setSuccess(true)
 
     } catch (err) {
